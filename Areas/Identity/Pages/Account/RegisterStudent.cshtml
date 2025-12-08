@@ -1,0 +1,53 @@
+@page
+@model RegisterStudentModel
+@{
+    ViewData["Title"] = "Register as Student";
+}
+
+<div class="d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="card shadow-lg p-4" style="width: 100%; max-width: 400px;">
+        <div class="card-body">
+            <h1 class="card-title text-center mb-4">@ViewData["Title"]</h1>
+            <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+
+            <form id="registerStudentForm" asp-route-returnUrl="@Model.ReturnUrl" method="post">
+                <div class="form-floating mb-3">
+                    <input asp-for="StudentInput.FirstName" class="form-control" autocomplete="given-name" aria-required="true" placeholder="First Name" />
+                    <label asp-for="StudentInput.FirstName">First Name</label>
+                    <span asp-validation-for="StudentInput.FirstName" class="text-danger"></span>
+                </div>
+                <div class="form-floating mb-3">
+                    <input asp-for="StudentInput.LastName" class="form-control" autocomplete="family-name" aria-required="true" placeholder="Last Name" />
+                    <label asp-for="StudentInput.LastName">Last Name</label>
+                    <span asp-validation-for="StudentInput.LastName" class="text-danger"></span>
+                </div>
+                <div class="form-floating mb-3">
+                    <input asp-for="StudentInput.Email" class="form-control" autocomplete="email" aria-required="true" placeholder="name@example.com" />
+                    <label asp-for="StudentInput.Email">Email</label>
+                    <span asp-validation-for="StudentInput.Email" class="text-danger"></span>
+                </div>
+                <div class="form-floating mb-3">
+                    <input asp-for="StudentInput.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
+                    <label asp-for="StudentInput.Password">Password</label>
+                    <span asp-validation-for="StudentInput.Password" class="text-danger"></span>
+                </div>
+                <div class="form-floating mb-3">
+                    <input asp-for="StudentInput.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
+                    <label asp-for="StudentInput.ConfirmPassword">Confirm Password</label>
+                    <span asp-validation-for="StudentInput.ConfirmPassword" class="text-danger"></span>
+                </div>
+                <button id="registerStudent" type="submit" class="w-100 btn btn-lg btn-primary">Sign up</button>
+            </form>
+
+            <div class="text-center mt-3">
+                <p>
+                    <a asp-page="./RegisterInstructor">Register as an Instructor</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

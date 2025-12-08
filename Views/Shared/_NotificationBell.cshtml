@@ -1,0 +1,27 @@
+
+<li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle" href="#" id="notificationDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="bi bi-bell fs-5"></i>
+        <span id="notificationCounter" class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle d-none">
+            0
+            <span class="visually-hidden">unread notifications</span>
+        </span>
+    </a>
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationDropdown" id="notificationList">
+        <li><h6 class="dropdown-header">Notifications</h6></li>
+        <li><hr class="dropdown-divider"></li>
+        <li id="noNotificationsMessage" class="dropdown-item text-muted">No new notifications.</li>
+        <!-- Notifications will be inserted here by JavaScript -->
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item text-center text-primary" href="/Notifications">View All Notifications</a></li>
+    </ul>
+</li>
+
+@* Hidden input for CSRF token, needed by notifications.js if CSRF is enabled *@
+<input type="hidden" id="RequestVerificationToken" name="__RequestVerificationToken" value="@Html.AntiForgeryToken()" />
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.js"></script>
+    <script src="~/js/signalr/dist/browser/signalr.js"></script>
+    <script src="~/js/notifications.js"></script>
+}

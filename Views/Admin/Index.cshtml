@@ -1,0 +1,37 @@
+@model Learnly.ViewModels.AdminDashboardViewModel
+@{
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<div class="container mt-5">
+    <h1>Admin Dashboard</h1>
+
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card text-white bg-primary mb-3">
+                <div class="card-header">Total Users</div>
+                <div class="card-body">
+                    <h4 class="card-title">@Model.TotalUsers</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-success mb-3">
+                <div class="card-header">Total Courses</div>
+                <div class="card-body">
+                    <h4 class="card-title">@Model.TotalCourses</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-info mb-3">
+                <div class="card-header">Total Enrollments</div>
+                <div class="card-body">
+                    <h4 class="card-title">@Model.TotalEnrollments</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* Add more dashboard components here *@
+</div>

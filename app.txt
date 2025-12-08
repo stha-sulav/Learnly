@@ -1,0 +1,36 @@
+### Application Flow Overview (Based on `app.txt`)
+
+This outlines the current state of the Learnly application, detailing implemented features and pending tasks for the Minimum Viable Product (MVP).
+
+#### Implemented Features (Current Application Flow)
+
+The application has a foundational structure with core components in place:
+
+*   **User Authentication & Data Models:** Essential user-related models (`Course`, `Question`, `Attempt`) are established and integrated with the database (`ApplicationDbContext`).
+*   **Quiz System - Backend:**
+    *   Quizzes can be retrieved for a given lesson (`GetQuizByLessonId`).
+    *   New quiz attempts can be initiated for a user (`StartQuizAttempt`).
+    *   User answers to a quiz can be submitted and saved (`SubmitQuizAttempt`).
+    *   A placeholder for quiz grading (`GradeAttempt`) exists, although the actual scoring logic is pending.
+*   **Quiz System - Frontend:**
+    *   Users can access a quiz-taking interface (`/Quiz/Take`).
+    *   Submitted quiz results can be displayed to the user (`/Quiz/Result`).
+*   **Progress Tracking:** Basic mechanisms for tracking user progress are implemented via a `ProgressController` and `UserProgress` model.
+*   **Platform Stability:** The project's build system is stable, and database migrations are correctly set up, indicating a solid development foundation.
+
+#### Pending for MVP (Immediate Development Focus)
+
+To reach MVP status, the following key areas require implementation:
+
+*   **Functional Quiz Grading:** The existing `GradeAttempt` method needs the actual logic to compare user answers against correct ones for accurate scoring.
+*   **Instructor Quiz Management UI:** A user interface is required for instructors to create, edit, and manage quizzes and their associated questions.
+*   **Video Content Strategy:** The current `Lesson.cs` model uses `byte[]` for `VideoData`. A review is needed to determine if storing large video files directly in the database is appropriate for MVP, or if an alternative (e.g., file system, S3) is better.
+*   **Seamless Lesson Integration:** Enhance the lesson pages to properly integrate with the quiz flow, ensuring correct navigation and context (e.g., "Back to Lesson" links, dynamic `lessonId` for quiz retakes).
+*   **Instructor Course Management:** Develop the functionality for instructors to perform CRUD (Create, Read, Update, Delete) operations on their courses.
+*   **Student Dashboard:** Create a dedicated dashboard where students can view their enrolled courses, progress, and other relevant information.
+*   **Admin Dashboard:** Implement an administrative interface for platform oversight and management.
+*   **Real-time Notifications:** Integrate real-time notification features as outlined in the `Gemini.md` vision document.
+
+#### Next Recommended Step
+
+The most critical next step is to **implement the actual quiz grading logic in `QuizService.cs`** to make the quiz feature fully functional and provide immediate, meaningful feedback to users.

@@ -1,0 +1,68 @@
+@page
+@model Learnly.Pages.Courses.IndexModel
+@{
+    ViewData["Title"] = "Courses";
+}
+
+<div class="container mt-4">
+    <h1 class="mb-4">Course Catalog</h1>
+
+    <!-- Search Bar -->
+    <div class="row mb-4">
+        <div class="col-md-8 offset-md-2">
+            <div class="input-group">
+                <input type="text" class="form-control" placeholder="Search for courses..." aria-label="Search courses">
+                <button class="btn btn-primary" type="button">Search</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Filters (Static for now) -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3 class="mb-3">Categories</h3>
+            <div class="btn-group" role="group" aria-label="Course categories">
+                <a href="#" class="btn btn-outline-secondary active">All</a>
+                <a href="#" class="btn btn-outline-secondary">Programming</a>
+                <a href="#" class="btn btn-outline-secondary">Web Development</a>
+                <a href="#" class="btn btn-outline-secondary">Data Science</a>
+                <a href="#" class="btn btn-outline-secondary">Design</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Course Grid -->
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        @if (Model.Courses != null)
+        {
+            @foreach (var course in Model.Courses)
+            {
+                <div class="col">
+                    <div class="card h-100 shadow-sm">
+                        <img src="@course.ThumbnailPath" class="card-img-top" alt="@course.Title" style="height: 180px; object-fit: cover;">
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">
+                                <a href="/Courses/Details/@course.Slug" class="text-decoration-none">@course.Title</a>
+                            </h5>
+                            <p class="card-text text-muted mb-1">By @course.InstructorName</p>
+                            <p class="card-text flex-grow-1">@course.ShortDescription</p>
+                            <div class="mt-auto">
+                                @if (course.ProgressPercent.HasValue)
+                                {
+                                    <span class="badge bg-info text-dark">Progress: @course.ProgressPercent%</span>
+                                }
+                                <a href="/Courses/Details/@course.Slug" class="btn btn-sm btn-outline-primary float-end">View Course</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-12">
+                <p>No courses available at the moment.</p>
+            </div>
+        }
+    </div>
+</div>

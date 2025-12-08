@@ -1,0 +1,191 @@
+@page "{slug}"
+@model Learnly.Pages.Lessons.LessonModel
+@{
+    ViewData["Title"] = Model.Lesson?.Title ?? "Lesson";
+}
+
+@if (Model.Lesson == null)
+{
+    <div class="alert alert-warning" role="alert">
+        Lesson not found.
+    </div>
+}
+else
+{
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <!-- Main Content Area (Video/Article/Markdown) -->
+            <div class="col-lg-9">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="/Courses">Courses</a></li>
+                        <li class="breadcrumb-item"><a href="/Courses/Details/@Model.Lesson!.CourseSlug">@Model.Lesson!.CourseTitle</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">@Model.Lesson!.Title</li>
+                    </ol>
+                </nav>
+
+                <h1>@Model.Lesson!.Title</h1>
+                <p class="lead text-muted">Module: @Model.Lesson!.ModuleTitle</p>
+
+                @if (Model.Lesson!.ContentType == Learnly.Models.ContentType.Video)
+                {
+                    <div class="ratio ratio-16x9 mb-4">
+                        <video id="lessonVideo" controls class="w-100" src="@Model.Lesson!.ContentPath" poster="/img/video-placeholder.png"></video>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.Lesson!.Transcript))
+                    {
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5>Transcript</h5>
+                            </div>
+                            <div class="card-body">
+                                <p>@Model.Lesson!.Transcript</p>
+                            </div>
+                        </div>
+                    }
+                }
+                else if (Model.Lesson!.ContentType == Learnly.Models.ContentType.Article || Model.Lesson!.ContentType == Learnly.Models.ContentType.Markdown)
+                {
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            @* For simplicity, direct HTML/Markdown output. In a real app, use a markdown renderer. *@
+                            @Html.Raw(Model.Lesson!.ContentPath)
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.Lesson!.Transcript))
+                    {
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5>Transcript</h5>
+                            </div>
+                            <div class="card-body">
+                                <p>@Model.Lesson!.Transcript</p>
+                            </div>
+                        </div>
+                    }
+                }
+
+                <div class="d-flex justify-content-between mb-4">
+                    @if (Model.Lesson!.PreviousLessonSlug != null)
+                    {
+                        <a href="/Lessons/View/@Model.Lesson!.PreviousLessonSlug" class="btn btn-outline-primary">
+                            <i class="bi bi-arrow-left me-2"></i> Previous: @Model.Lesson!.PreviousLessonTitle
+                        </a>
+                    }
+                    else
+                    {
+                        <span></span> @* Spacer for alignment *@
+                    }
+
+                    @if (!Model.Lesson!.IsCompleted)
+                    {
+                        <form method="post" asp-page-handler="MarkComplete">
+                            <input type="hidden" name="lessonId" value="@Model.Lesson!.Id" />
+                            <button type="submit" class="btn btn-success">
+                                Mark Complete <i class="bi bi-check-circle ms-2"></i>
+                            </button>
+                        </form>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-success" disabled>
+                            Completed <i class="bi bi-check-circle-fill ms-2"></i>
+                        </button>
+                    }
+
+
+                    @if (Model.Lesson!.NextLessonSlug != null)
+                    {
+                        <a href="/Lessons/View/@Model.Lesson!.NextLessonSlug" class="btn btn-outline-primary">
+                            Next: @Model.Lesson!.NextLessonTitle <i class="bi bi-arrow-right ms-2"></i>
+                        </a>
+                    }
+                    else
+                    {
+                        <span></span> @* Spacer for alignment *@
+                    }
+                </div>
+
+                <!-- Comments Section Placeholder -->
+                <div class="mt-5">
+                    <h3>Comments</h3>
+                    <div class="card card-body">
+                        <p>Comments section coming soon...</p>
+                    </div>
+                </div>
+
+                <!-- Quiz Widget Placeholder -->
+                @if (Model.Lesson!.HasQuiz)
+                {
+                    <div class="mt-4 d-flex align-items-center">
+                        <h5 class="me-3 mb-0">Quiz available for this lesson!</h5>
+                        <button class="btn btn-info btn-sm">Start Quiz</button>
+                    </div>
+                }
+            </div>
+
+            <!-- Sidebar (Course Progress/Navigation) -->
+            <div class="col-lg-3">
+                <div class="card shadow-sm mt-4 mt-lg-0">
+                    <div class="card-body">
+                        <h5 class="card-title">Course Navigation</h5>
+                        <p class="card-text">Quick access to other lessons in this course.</p>
+                        <a href="/Courses/Details/@Model.Lesson!.CourseSlug" class="btn btn-primary btn-sm d-block">Back to Course Details</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.js"></script>
+    @if (Model.Lesson!.ContentType == Learnly.Models.ContentType.Video)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const video = document.getElementById('lessonVideo');
+                if (video) {
+                    let lastSentTime = @Model.Lesson!.PositionSeconds;
+                    video.currentTime = lastSentTime;
+
+                    let throttled = false;
+                    video.addEventListener('timeupdate', function () {
+                        if (!throttled) {
+                            throttled = true;
+                            setTimeout(function () {
+                                const currentTime = Math.floor(video.currentTime);
+                                if (Math.abs(currentTime - lastSentTime) >= 10) { // Send every 10 seconds or more
+                                    sendProgress(currentTime);
+                                    lastSentTime = currentTime;
+                                }
+                                throttled = false;
+                            }, 10000); // 10 seconds throttle
+                        }
+                    });
+
+                    // Also send progress when video ends
+                    video.addEventListener('ended', function() {
+                        sendProgress(Math.floor(video.duration), true);
+                    });
+
+                    async function sendProgress(positionSeconds, completed = false) {
+                        const lessonId = @Model.Lesson!.Id;
+                        const response = await fetch(`/api/lessons/${lessonId}/progress`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value // If CSRF token is used
+                            },
+                            body: JSON.stringify({ positionSeconds: positionSeconds, completed: completed })
+                        });
+
+                        if (!response.ok) {
+                            console.error('Failed to send progress update.');
+                        }
+                    }
+                }
+            });
+        </script>
+    }
+}

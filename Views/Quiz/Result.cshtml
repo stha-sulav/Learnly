@@ -1,0 +1,55 @@
+@model Learnly.ViewModels.GradeResultDto
+@{
+    ViewData["Title"] = "Quiz Result: " + Model.QuizTitle;
+}
+
+<div class="container mt-5">
+    <div class="card text-center">
+        <div class="card-header">
+            <h2>@ViewData["Title"]</h2>
+        </div>
+        <div class="card-body">
+            <h3 class="card-title">Your Score: @Model.Score.ToString("0.##")%</h3>
+            <p class="card-text">Passing Score: @Model.PassingScore%</p>
+
+            @if (Model.Passed)
+            {
+                <div class="alert alert-success" role="alert">
+                    <h4>Congratulations, you passed!</h4>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-danger" role="alert">
+                    <h4>You did not pass. Keep studying and try again!</h4>
+                </div>
+            }
+
+            <hr />
+
+            <h5>Question Breakdown:</h5>
+            <ul class="list-group mb-3">
+                @foreach (var feedback in Model.QuestionFeedbacks)
+                {
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Question @feedback.QuestionId: @feedback.Message
+                        @if (feedback.EarnedPoints > 0)
+                        {
+                            <span class="badge bg-success rounded-pill">@feedback.EarnedPoints/@feedback.PossiblePoints</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger rounded-pill">@feedback.EarnedPoints/@feedback.PossiblePoints</span>
+                        }
+                    </li>
+                }
+            </ul>
+        </div>
+        <div class="card-footer text-muted">
+            @if (!Model.Passed)
+            {
+                <a href="@Url.Action("Take", "Quiz", new { lessonId = Model.QuizId })" class="btn btn-secondary">Retake Quiz</a> 
+            }
+        </div>
+    </div>
+</div>

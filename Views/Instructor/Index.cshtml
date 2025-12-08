@@ -1,0 +1,31 @@
+@model Learnly.ViewModels.InstructorDashboardViewModel
+@{
+    ViewData["Title"] = "Instructor Dashboard";
+}
+
+<div class="container">
+    <h1 class="mt-4">@ViewData["Title"]</h1>
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card text-white bg-primary mb-3">
+                <div class="card-header">Total Courses</div>
+                <div class="card-body">
+                    <h5 class="card-title">@Model.TotalCourses</h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card text-white bg-success mb-3">
+                <div class="card-header">Total Students</div>
+                <div class="card-body">
+                    <h5 class="card-title">@Model.TotalStudents</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <a asp-controller="Instructor" asp-action="Create" class="btn btn-primary">Create New Course</a>
+        </div>
+    </div>
+</div>
