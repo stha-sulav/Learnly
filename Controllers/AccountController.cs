@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Learnly.Controllers
 {
-    [Authorize(Roles = $"{Roles.Instructor},{Roles.User}")]
+    [Authorize]
     public class AccountController : Controller
     {
         private readonly IAccountService _accountService;
