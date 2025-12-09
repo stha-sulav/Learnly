@@ -15,8 +15,8 @@ namespace Learnly.Data
         public DbSet<Course> Courses { get; set; }
         public DbSet<Module> Modules { get; set; }
         public DbSet<Lesson> Lessons { get; set; }
+        public DbSet<LessonProgress> LessonProgresses { get; set; }
         public DbSet<Enrollment> Enrollments { get; set; }
-        public DbSet<UserProgress> UserProgresses { get; set; } // Renamed to plural
         public DbSet<Comment> Comments { get; set; }
         public DbSet<CommentLike> CommentLikes { get; set; } // New DbSet
         public DbSet<Notification> Notifications { get; set; }
@@ -35,9 +35,7 @@ namespace Learnly.Data
                 .WithMany(u => u.CoursesCreated) // Use the new collection
                 .OnDelete(DeleteBehavior.NoAction);
 
-            builder.Entity<Lesson>()
-                .Property(l => l.VideoData)
-                .HasColumnType("varbinary(max)");
+
 
             // Category relationships
             builder.Entity<Category>()
@@ -72,23 +70,17 @@ namespace Learnly.Data
                 .HasForeignKey(e => e.CourseId)
                 .OnDelete(DeleteBehavior.NoAction);
 
-            // UserProgress relationships
-            builder.Entity<UserProgress>()
-                .HasOne(up => up.User)
+            // LessonProgress relationships
+            builder.Entity<LessonProgress>()
+                .HasOne(lp => lp.User)
                 .WithMany()
-                .HasForeignKey(up => up.UserId)
+                .HasForeignKey(lp => lp.UserId)
                 .OnDelete(DeleteBehavior.NoAction);
 
-            builder.Entity<UserProgress>()
-                .HasOne(up => up.Lesson)
-                .WithMany()
-                .HasForeignKey(up => up.LessonId)
-                .OnDelete(DeleteBehavior.NoAction);
-            
-            builder.Entity<UserProgress>()
-                .HasOne(up => up.Course)
-                .WithMany()
-                .HasForeignKey(up => up.CourseId)
+            builder.Entity<LessonProgress>()
+                .HasOne(lp => lp.Lesson)
+                .WithMany(l => l.LessonProgresses)
+                .HasForeignKey(lp => lp.LessonId)
                 .OnDelete(DeleteBehavior.NoAction);
 
             // Comment relationships

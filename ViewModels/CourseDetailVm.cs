@@ -7,7 +7,6 @@ namespace Learnly.ViewModels
     {
         public int Id { get; set; }
         public required string Title { get; set; }
-        public required string Slug { get; set; }
         public ContentType ContentType { get; set; } // e.g., video, article, markdown
         public int DurationSeconds { get; set; }
         public int Order { get; set; }

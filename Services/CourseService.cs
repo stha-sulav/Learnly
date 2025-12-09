@@ -21,7 +21,7 @@ namespace Learnly.Services
         public async Task<IEnumerable<CourseSummaryVm>> GetPublicCourseSummaries()
         {
             return await _context.Courses
-                .Where(c => c.Published)
+                .Where(c => c.IsPublished)
                 .Select(c => new CourseSummaryVm
                 {
                     Id = c.Id,
@@ -52,19 +52,18 @@ namespace Learnly.Services
                     ThumbnailPath = c.ThumbnailPath ?? string.Empty,
                     Price = c.Price,
                     IsEnrolled = false, // This would be dynamic based on current user enrollment
-                    Modules = c.Modules.OrderBy(m => m.Order).Select(m => new ModuleVm
+                    Modules = c.Modules.OrderBy(m => m.OrderIndex).Select(m => new ModuleVm
                     {
                         Id = m.Id,
                         Title = m.Title,
-                        Order = m.Order,
-                        Lessons = m.Lessons.OrderBy(l => l.Order).Select(l => new LessonVm
+                        Order = m.OrderIndex,
+                        Lessons = m.Lessons.OrderBy(l => l.OrderIndex).Select(l => new LessonVm
                         {
                             Id = l.Id,
                             Title = l.Title,
-                            Slug = l.Slug,
                             ContentType = l.ContentType,
                             DurationSeconds = l.DurationSeconds,
-                            Order = l.Order,
+                            Order = l.OrderIndex,
                             IsCompleted = false // This would be dynamic based on user progress
                         }).ToList()
                     }).ToList()
@@ -72,31 +71,30 @@ namespace Learnly.Services
                 .FirstOrDefaultAsync();
         }
 
-        public async Task<LessonDetailVm?> GetLessonDetailsBySlug(string slug)
+        public async Task<LessonDetailVm?> GetLessonDetailsById(int lessonId)
         {
             return await _context.Lessons
-                .Where(l => l.Slug == slug)
+                .Where(l => l.Id == lessonId)
+                .Include(l => l.Module)
+                    .ThenInclude(m => m.Course)
                 .Select(l => new LessonDetailVm
                 {
                     Id = l.Id,
                     Title = l.Title,
-                    Slug = l.Slug,
                     CourseId = l.Module!.Course!.Id,
                     CourseTitle = l.Module!.Course!.Title,
                     CourseSlug = l.Module!.Course!.Slug,
                     ModuleId = l.ModuleId,
                     ModuleTitle = l.Module!.Title,
                     ContentType = l.ContentType,
-                    ContentPath = l.ContentPath ?? string.Empty,
+                    ContentPath = l.Content ?? string.Empty, // Changed to Content
                     DurationSeconds = l.DurationSeconds,
                     IsCompleted = false, // Dynamic
                     // These would require more complex queries for prev/next and user progress
-                    NextLessonId = (int?)_context.Lessons.Where(next => next.ModuleId == l.ModuleId && next.Order > l.Order).OrderBy(next => next.Order).Select(next => next.Id).FirstOrDefault(),
-                    NextLessonSlug = _context.Lessons.Where(next => next.ModuleId == l.ModuleId && next.Order > l.Order).OrderBy(next => next.Order).Select(next => next.Slug).FirstOrDefault(),
-                    NextLessonTitle = _context.Lessons.Where(next => next.ModuleId == l.ModuleId && next.Order > l.Order).OrderBy(next => next.Order).Select(next => next.Title).FirstOrDefault(),
-                    PreviousLessonId = (int?)_context.Lessons.Where(prev => prev.ModuleId == l.ModuleId && prev.Order < l.Order).OrderByDescending(prev => prev.Order).Select(prev => prev.Id).FirstOrDefault(),
-                    PreviousLessonSlug = _context.Lessons.Where(prev => prev.ModuleId == l.ModuleId && prev.Order < l.Order).OrderByDescending(prev => prev.Order).Select(prev => prev.Slug).FirstOrDefault(),
-                    PreviousLessonTitle = _context.Lessons.Where(prev => prev.ModuleId == l.ModuleId && prev.Order < l.Order).OrderByDescending(prev => prev.Order).Select(prev => prev.Title).FirstOrDefault(),
+                    NextLessonId = (int?)_context.Lessons.Where(next => next.ModuleId == l.ModuleId && next.OrderIndex > l.OrderIndex).OrderBy(next => next.OrderIndex).Select(next => next.Id).FirstOrDefault(),
+                    NextLessonTitle = _context.Lessons.Where(next => next.ModuleId == l.ModuleId && next.OrderIndex > l.OrderIndex).OrderBy(next => next.OrderIndex).Select(next => next.Title).FirstOrDefault(),
+                    PreviousLessonId = (int?)_context.Lessons.Where(prev => prev.ModuleId == l.ModuleId && prev.OrderIndex < l.OrderIndex).OrderByDescending(prev => prev.OrderIndex).Select(prev => prev.Id).FirstOrDefault(),
+                    PreviousLessonTitle = _context.Lessons.Where(prev => prev.ModuleId == l.ModuleId && prev.OrderIndex < l.OrderIndex).OrderByDescending(prev => prev.OrderIndex).Select(prev => prev.Title).FirstOrDefault(),
                     HasQuiz = false, // Dynamic
                     Transcript = null, // Needs to be loaded from somewhere or part of content
                     PositionSeconds = 0 // Dynamic
@@ -116,7 +114,7 @@ namespace Learnly.Services
                 Price = courseDto.Price,
                 ThumbnailPath = courseDto.ThumbnailPath,
                 CreatedAt = DateTime.UtcNow,
-                Published = courseDto.Published
+                IsPublished = courseDto.Published // Changed to IsPublished
             };
 
             _context.Courses.Add(course);

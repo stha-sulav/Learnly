@@ -1,4 +1,4 @@
-using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -7,19 +7,25 @@ namespace Learnly.Models
     public class Lesson
     {
         public int Id { get; set; }
-        [Required, MaxLength(255)]
-        public string Title { get; set; } = string.Empty;
-        
-        [Required, MaxLength(255)]
-        public string Slug { get; set; } = string.Empty;
-        public string? Description { get; set; }
-        public ContentType ContentType { get; set; }
-        public string? ContentPath { get; set; } // Path to video file, or markdown content
-        public int DurationSeconds { get; set; } // For video content
-        public byte[]? VideoData { get; set; } // Raw video data
-        public int Order { get; set; }
 
+        [ForeignKey("Module")]
         public int ModuleId { get; set; }
-        public Module Module { get; set; } = null!; // Required navigation property
+        public Module Module { get; set; }
+
+        [Required]
+        [StringLength(200)]
+        public string Title { get; set; } = string.Empty;
+
+        public ContentType ContentType { get; set; }
+
+        public int DurationSeconds { get; set; } = 0; // For video lessons
+
+        public string? VideoPath { get; set; } // Path to video file if ContentType is Video
+
+        public string? Content { get; set; } // For article/markdown lessons
+
+        public int OrderIndex { get; set; }
+
+        public ICollection<LessonProgress> LessonProgresses { get; set; } = new HashSet<LessonProgress>();
     }
 }

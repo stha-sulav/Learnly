@@ -43,38 +43,37 @@ namespace Learnly.Controllers
                 return BadRequest("Lesson, Module, or Course not found for the given lesson ID.");
             }
 
-            var userProgress = await _context.UserProgresses
-                .FirstOrDefaultAsync(up => up.UserId == userId && up.LessonId == lessonId);
+            var lessonProgress = await _context.LessonProgresses
+                .FirstOrDefaultAsync(lp => lp.UserId == userId && lp.LessonId == lessonId);
 
-            if (userProgress == null)
+            if (lessonProgress == null)
             {
                 // Create new progress record
-                userProgress = new UserProgress
+                lessonProgress = new LessonProgress
                 {
                     UserId = userId,
                     LessonId = lessonId,
-                    CourseId = lesson.Module.Course.Id, // Assuming CourseId is accessible via Lesson -> Module -> Course
                     IsCompleted = progressDto.Completed,
                     PositionSeconds = progressDto.PositionSeconds,
                     LastAccessed = System.DateTime.UtcNow
                 };
                 if (progressDto.Completed)
                 {
-                    userProgress.CompletedAt = System.DateTime.UtcNow;
+                    lessonProgress.CompletedAt = System.DateTime.UtcNow;
                 }
-                _context.UserProgresses.Add(userProgress);
+                _context.LessonProgresses.Add(lessonProgress);
             }
             else
             {
                 // Update existing progress record
-                userProgress.IsCompleted = progressDto.Completed;
-                userProgress.PositionSeconds = progressDto.PositionSeconds;
-                userProgress.LastAccessed = System.DateTime.UtcNow;
-                if (progressDto.Completed && userProgress.CompletedAt == null)
+                lessonProgress.IsCompleted = progressDto.Completed;
+                lessonProgress.PositionSeconds = progressDto.PositionSeconds;
+                lessonProgress.LastAccessed = System.DateTime.UtcNow;
+                if (progressDto.Completed && lessonProgress.CompletedAt == null)
                 {
-                    userProgress.CompletedAt = System.DateTime.UtcNow;
+                    lessonProgress.CompletedAt = System.DateTime.UtcNow;
                 }
-                _context.UserProgresses.Update(userProgress);
+                _context.LessonProgresses.Update(lessonProgress);
             }
 
             await _context.SaveChangesAsync();

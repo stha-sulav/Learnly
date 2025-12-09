@@ -1,4 +1,4 @@
-@page "{slug}"
+@page "{lessonId:int?}"
 @model Learnly.Pages.Lessons.LessonModel
 @{
     ViewData["Title"] = Model.Lesson?.Title ?? "Lesson";
@@ -66,9 +66,9 @@ else
                 }
 
                 <div class="d-flex justify-content-between mb-4">
-                    @if (Model.Lesson!.PreviousLessonSlug != null)
+                    @if (Model.Lesson!.PreviousLessonId != null)
                     {
-                        <a href="/Lessons/View/@Model.Lesson!.PreviousLessonSlug" class="btn btn-outline-primary">
+                        <a href="/Lessons/View?lessonId=@Model.Lesson!.PreviousLessonId" class="btn btn-outline-primary">
                             <i class="bi bi-arrow-left me-2"></i> Previous: @Model.Lesson!.PreviousLessonTitle
                         </a>
                     }
@@ -94,9 +94,9 @@ else
                     }
 
 
-                    @if (Model.Lesson!.NextLessonSlug != null)
+                    @if (Model.Lesson!.NextLessonId != null)
                     {
-                        <a href="/Lessons/View/@Model.Lesson!.NextLessonSlug" class="btn btn-outline-primary">
+                        <a href="/Lessons/View?lessonId=@Model.Lesson!.NextLessonId" class="btn btn-outline-primary">
                             Next: @Model.Lesson!.NextLessonTitle <i class="bi bi-arrow-right ms-2"></i>
                         </a>
                     }

@@ -17,14 +17,14 @@ namespace Learnly.Pages.Lessons
 
         public LessonDetailVm? Lesson { get; set; }
 
-        public async Task<IActionResult> OnGetAsync(string slug)
+        public async Task<IActionResult> OnGetAsync(int? lessonId)
         {
-            if (string.IsNullOrEmpty(slug))
+            if (!lessonId.HasValue)
             {
                 return NotFound();
             }
 
-            Lesson = await _courseService.GetLessonDetailsBySlug(slug);
+            Lesson = await _courseService.GetLessonDetailsById(lessonId.Value);
 
             if (Lesson == null)
             {
@@ -46,7 +46,7 @@ namespace Learnly.Pages.Lessons
             // if (success) { /* update UI or redirect */ }
 
             await Task.CompletedTask; // To satisfy CS1998 warning for async method without await
-            return RedirectToPage(new { slug = Lesson.Slug });
+            return RedirectToPage(new { lessonId = lessonId });
         }
     }
 }

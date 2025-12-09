@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Learnly.Models
 {
-    public class UserProgress
+    public class LessonProgress
     {
         public int Id { get; set; }
         
@@ -14,9 +14,6 @@ namespace Learnly.Models
         
         public int LessonId { get; set; }
         public Lesson Lesson { get; set; } = null!; // Required navigation property
-        
-        public int CourseId { get; set; } // Redundant but useful for querying progress within a specific course
-        public Course Course { get; set; } = null!; // Required navigation property
         
         public bool IsCompleted { get; set; } = false;
         public int PositionSeconds { get; set; } = 0; // For video/audio content, where the user left off
