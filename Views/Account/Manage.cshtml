@@ -3,50 +3,139 @@
     ViewData["Title"] = "Manage Account";
 }
 
-<h1>@ViewData["Title"]</h1>
-
-@if (TempData["StatusMessage"] != null)
-{
-    <div class="alert alert-success" role="alert">
-        @TempData["StatusMessage"]
-    </div>
-}
-
-<div class="row">
-    <div class="col-md-6">
-        <form method="post" enctype="multipart/form-data">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-group">
-                <label asp-for="FirstName"></label>
-                <input asp-for="FirstName" class="form-control" />
-                <span asp-validation-for="FirstName" class="text-danger"></span>
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm mt-4">
+            <div class="card-header">
+                <h3 class="mb-0">@ViewData["Title"]</h3>
             </div>
-            <div class="form-group">
-                <label asp-for="LastName"></label>
-                <input asp-for="LastName" class="form-control" />
-                <span asp-validation-for="LastName" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="Email"></label>
-                <input asp-for="Email" class="form-control" />
-                <span asp-validation-for="Email" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="ProfilePictureFile"></label>
-                <input asp-for="ProfilePictureFile" type="file" class="form-control-file" accept="image/*" />
-                <span asp-validation-for="ProfilePictureFile" class="text-danger"></span>
-                @if (!string.IsNullOrEmpty(Model.ProfilePicturePath))
+            <div class="card-body">
+                @if (TempData["StatusMessage"] != null)
                 {
-                    <div class="mt-2">
-                        <img src="@Model.ProfilePicturePath" alt="Profile Picture" class="img-thumbnail" style="width: 150px; height: 150px; object-fit: cover;" />
+                    <div class="alert alert-success mb-3" role="alert">
+                        @TempData["StatusMessage"]
                     </div>
                 }
+                <form method="post" enctype="multipart/form-data">
+                                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                    
+                                                                                <div class="d-flex justify-content-center mb-2">
+                    
+                                                                                    <div class="profile-picture-container" style="width: 100px; height: 100px; position: relative;">
+                    
+                                                                                        @if (!string.IsNullOrEmpty(Model.ProfilePicturePath))
+                    
+                                                                                        {
+                    
+                                                                                            <img id="profilePreviewImage" src="@Model.ProfilePicturePath" alt="Profile Picture" class="img-thumbnail rounded-circle profilePreview" style="width: 100%; height: 100%; object-fit: cover; position: absolute;" onerror="this.onerror=null; this.classList.add('d-none'); document.getElementById('profilePreviewIcon').classList.remove('d-none');" />
+                    
+                                                                                            <i id="profilePreviewIcon" class="bi bi-person d-none profilePreview d-flex align-items-center justify-content-center" style="font-size: 50px; width: 100%; height: 100%; position: absolute;"></i>
+                    
+                                                                                        }
+                    
+                                                                                        else
+                    
+                                                                                        {
+                    
+                                                                                            <img id="profilePreviewImage" src="#" alt="Profile Picture" class="img-thumbnail rounded-circle d-none profilePreview" style="width: 100%; height: 100%; object-fit: cover; position: absolute;" />
+                    
+                                                                                            <i id="profilePreviewIcon" class="bi bi-person profilePreview d-flex align-items-center justify-content-center" style="font-size: 50px; width: 100%; height: 100%; position: absolute;"></i>
+                    
+                                                                                        }
+                    
+                                                                                    </div>
+                    
+                                                                                </div>                                        <div class="d-flex justify-content-center mb-4">
+                                            <button type="button" id="changeProfilePictureButton" class="btn btn-outline-primary btn-sm">Change Profile Picture</button>
+                                        </div>
+                    
+                                        <div class="mb-3">
+                                            <label asp-for="FirstName" class="form-label"></label>
+                                            <input asp-for="FirstName" class="form-control" />
+                                            <span asp-validation-for="FirstName" class="text-danger"></span>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label asp-for="LastName" class="form-label"></label>
+                                            <input asp-for="LastName" class="form-control" />
+                                            <span asp-validation-for="LastName" class="text-danger"></span>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label asp-for="Email" class="form-label"></label>
+                                            <input asp-for="Email" class="form-control" readonly="readonly" />
+                                            <span asp-validation-for="Email" class="text-danger"></span>
+                                        </div>
+
+
+
+                                        <div id="passwordChangeSection">
+                                            <div class="mb-3">
+                                                <label asp-for="OldPassword" class="form-label"></label>
+                                                <input asp-for="OldPassword" class="form-control" />
+                                                <span asp-validation-for="OldPassword" class="text-danger"></span>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label asp-for="NewPassword" class="form-label"></label>
+                                                <input asp-for="NewPassword" class="form-control" />
+                                                <span asp-validation-for="NewPassword" class="text-danger"></span>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label asp-for="ConfirmNewPassword" class="form-label"></label>
+                                                <input asp-for="ConfirmNewPassword" class="form-control" />
+                                                <span asp-validation-for="ConfirmNewPassword" class="text-danger"></span>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3 d-none">
+                                            <label asp-for="ProfilePictureFile" class="form-label"></label>
+                                            <input asp-for="ProfilePictureFile" type="file" id="profilePictureInput" class="form-control" accept="image/*" />
+                                            <span asp-validation-for="ProfilePictureFile" class="text-danger"></span>
+                                        </div>
+                                        <hr class="mt-4 mb-4" />
+                                        <div class="d-flex justify-content-center gap-2 mt-4">
+                                            <button type="submit" class="btn btn-primary">Save</button>
+                                            <button type="button" id="cancelButton" class="btn btn-secondary">Cancel</button>
+                                        </div>                </form>
             </div>
-            <button type="submit" class="btn btn-primary">Save</button>
-        </form>
+        </div>
     </div>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.getElementById('changeProfilePictureButton').addEventListener('click', function() {
+            document.getElementById('profilePictureInput').click();
+        });
+
+        document.getElementById('profilePictureInput').addEventListener('change', function() {
+            const file = this.files[0];
+            const profilePreviewImage = document.getElementById('profilePreviewImage');
+            const profilePreviewIcon = document.getElementById('profilePreviewIcon');
+            const originalProfilePicturePath = '@Model.ProfilePicturePath';
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    profilePreviewImage.src = e.target.result;
+                    profilePreviewImage.classList.remove('d-none'); // Show image
+                    profilePreviewIcon.classList.add('d-none');    // Hide icon
+                };
+                reader.readAsDataURL(file);
+            } else {
+                // No file selected, revert to original state
+                if (originalProfilePicturePath) {
+                    profilePreviewImage.src = originalProfilePicturePath;
+                    profilePreviewImage.classList.remove('d-none');
+                    profilePreviewIcon.classList.add('d-none');
+                } else {
+                    profilePreviewImage.classList.add('d-none');
+                    profilePreviewIcon.classList.remove('d-none');
+                }
+            }
+        });
+
+        document.getElementById('cancelButton').addEventListener('click', function() {
+            window.location.href = '@Model.CancelReturnUrl';
+        });
+    </script>
 }
