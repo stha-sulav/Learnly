@@ -12,6 +12,7 @@ namespace Learnly.Models
         public string? LastName { get; set; }
         [PersonalData]
         public string? DisplayName { get; set; }
+        public string? ProfilePicturePath { get; set; }
         public DateTime DateJoined { get; set; } = DateTime.UtcNow;
         public DateTime? LastLoginDate { get; set; }
 

@@ -1,6 +1,6 @@
 @model Learnly.ViewModels.ManageAccountViewModel
 @{
-    ViewData["Title"] = "Manage Account";
+    ViewData["Title"] = "Edit User";
 }
 
 <h1>@ViewData["Title"]</h1>
@@ -28,7 +28,7 @@
             </div>
             <div class="form-group">
                 <label asp-for="Email"></label>
-                <input asp-for="Email" class="form-control" />
+                <input asp-for="Email" class="form-control" readonly /> @* Email usually shouldn't be editable by admin directly *@
                 <span asp-validation-for="Email" class="text-danger"></span>
             </div>
             <div class="form-group">
@@ -43,6 +43,7 @@
                 }
             </div>
             <button type="submit" class="btn btn-primary">Save</button>
+            <a asp-action="Users" class="btn btn-secondary">Back to Users</a>
         </form>
     </div>
 </div>
