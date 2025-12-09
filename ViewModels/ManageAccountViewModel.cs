@@ -23,6 +23,9 @@ namespace Learnly.ViewModels
         [Display(Name = "Upload New Profile Picture")]
         public IFormFile? ProfilePictureFile { get; set; }
 
+        [Display(Name = "Remove Profile Picture")]
+        public bool RemoveProfilePicture { get; set; }
+
         public string? CancelReturnUrl { get; set; }
 
         [Required]

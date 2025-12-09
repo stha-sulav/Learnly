@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // Use Bootstrap's native dismiss functionality if available
             var alert = new bootstrap.Alert(alertElement);
             alert.close();
-        }, 5000); // 5 seconds
+        }, 3750); // 3.75 seconds
     });
 
     // 2. Tooltip and popover initialization

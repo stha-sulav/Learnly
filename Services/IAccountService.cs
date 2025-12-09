@@ -8,5 +8,6 @@ namespace Learnly.Services
     {
         Task<ManageAccountViewModel> GetAccountInfoAsync(ApplicationUser user);
         Task<bool> UpdateAccountInfoAsync(ApplicationUser user, ManageAccountViewModel model);
+        Task<bool> RemoveProfilePictureAsync(ApplicationUser user);
     }
 }

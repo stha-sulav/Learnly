@@ -34,15 +34,54 @@ namespace Learnly.Services
 
         public async Task<bool> UpdateAccountInfoAsync(ApplicationUser user, ManageAccountViewModel model)
         {
-            user.FirstName = model.FirstName;
-            user.LastName = model.LastName;
-            user.Email = model.Email;
+            bool isUpdated = false;
+
+            if (user.FirstName != model.FirstName)
+            {
+                user.FirstName = model.FirstName;
+                isUpdated = true;
+            }
+
+            if (user.LastName != model.LastName)
+            {
+                user.LastName = model.LastName;
+                isUpdated = true;
+            }
+
+            if (user.Email != model.Email)
+            {
+                user.Email = model.Email;
+                isUpdated = true;
+            }
+
 
             if (model.ProfilePictureFile != null)
             {
                 user.ProfilePicturePath = await SaveProfilePictureAsync(model.ProfilePictureFile);
+                isUpdated = true;
             }
 
+            if(isUpdated)
+            {
+                var result = await _userManager.UpdateAsync(user);
+                return result.Succeeded;
+            }
+
+            return true;
+        }
+
+        public async Task<bool> RemoveProfilePictureAsync(ApplicationUser user)
+        {
+            if (!string.IsNullOrEmpty(user.ProfilePicturePath))
+            {
+                var filePath = Path.Combine(_webHostEnvironment.WebRootPath, user.ProfilePicturePath.TrimStart('/'));
+                if (File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                }
+            }
+
+            user.ProfilePicturePath = null;
             var result = await _userManager.UpdateAsync(user);
             return result.Succeeded;
         }

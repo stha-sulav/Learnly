@@ -80,6 +80,11 @@ namespace Learnly.Controllers
                 // ModelState.IsValid will now check [Compare("NewPassword")] and [StringLength("NewPassword")]
             }
 
+            if(model.RemoveProfilePicture)
+            {
+                profileChangeAttempted = true;
+            }
+
             if (!ModelState.IsValid) // Check for all validation, including password if attempted
             {
                 // Re-populate CancelReturnUrl and other view data if validation fails
@@ -130,6 +135,22 @@ namespace Learnly.Controllers
                 if (profileUpdateSuccess && string.IsNullOrEmpty(TempData["StatusMessage"]?.ToString()))
                 {
                     TempData["StatusMessage"] = "Your profile has been updated";
+                }
+            }
+            
+            if(model.RemoveProfilePicture)
+            {
+                var removePictureSuccess = await _accountService.RemoveProfilePictureAsync(user);
+                if (!removePictureSuccess)
+                {
+                    ModelState.AddModelError(string.Empty, "An error occurred while removing your profile picture.");
+                }
+                else
+                {
+                     if (string.IsNullOrEmpty(TempData["StatusMessage"]?.ToString()))
+                     {
+                        TempData["StatusMessage"] = "Your profile picture has been removed.";
+                     }
                 }
             }
             
