@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Learnly.ViewModels
 {
-    public class CreateCourseDto
+    public class CourseCreateUpdateDto
     {
         [Required]
         [StringLength(200, MinimumLength = 3)]
@@ -15,7 +15,7 @@ namespace Learnly.ViewModels
         [StringLength(1000)]
         public required string Description { get; set; }
 
-        public int InstructorId { get; set; } // Assuming InstructorId will be passed
+        public string InstructorId { get; set; } // Changed to string
 
         public int CategoryId { get; set; }
 
@@ -24,6 +24,6 @@ namespace Learnly.ViewModels
 
         public required string ThumbnailPath { get; set; }
 
-        public bool Published { get; set; } = false;
+        public bool IsPublished { get; set; } = false; // Changed to IsPublished
     }
 }

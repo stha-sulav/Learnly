@@ -41,19 +41,20 @@ namespace Learnly.Controllers
                     Text = c.Name
                 }).ToList();
 
-            return View(new CreateCourseDto
+            return View(new CourseCreateUpdateDto
             {
                 Title = "",
                 Slug = "",
                 Description = "",
-                ThumbnailPath = ""
+                ThumbnailPath = "",
+                InstructorId = "" // Set a default empty string for string type
             });
         }
 
         // POST: Instructor/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(CreateCourseDto courseDto)
+        public async Task<IActionResult> Create(CourseCreateUpdateDto courseDto)
         {
             if (ModelState.IsValid)
             {

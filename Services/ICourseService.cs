@@ -9,6 +9,6 @@ namespace Learnly.Services
         Task<IEnumerable<CourseSummaryVm>> GetPublicCourseSummaries();
         Task<CourseDetailVm> GetCourseWithCurriculum(string slug);
         Task<LessonDetailVm> GetLessonDetailsById(int lessonId);
-        Task<CourseDetailVm> CreateCourse(CreateCourseDto courseDto);
+        Task<CourseDetailVm> CreateCourse(CourseCreateUpdateDto courseDto);
     }
 }

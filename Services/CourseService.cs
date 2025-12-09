@@ -102,7 +102,7 @@ namespace Learnly.Services
                 .FirstOrDefaultAsync();
         }
 
-        public async Task<CourseDetailVm> CreateCourse(CreateCourseDto courseDto)
+        public async Task<CourseDetailVm> CreateCourse(CourseCreateUpdateDto courseDto)
         {
             var course = new Course
             {
@@ -114,7 +114,7 @@ namespace Learnly.Services
                 Price = courseDto.Price,
                 ThumbnailPath = courseDto.ThumbnailPath,
                 CreatedAt = DateTime.UtcNow,
-                IsPublished = courseDto.Published // Changed to IsPublished
+                IsPublished = courseDto.IsPublished // Changed to IsPublished
             };
 
             _context.Courses.Add(course);
