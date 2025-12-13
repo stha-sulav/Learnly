@@ -3,16 +3,21 @@ using Learnly.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Identity; // Added
+using Learnly.Models; // Added
+using System.Security.Claims; // Added
 
 namespace Learnly.Pages.Lessons
 {
     public class LessonModel : PageModel
     {
         private readonly ICourseService _courseService;
+        private readonly UserManager<ApplicationUser> _userManager; // Added
 
-        public LessonModel(ICourseService courseService)
+        public LessonModel(ICourseService courseService, UserManager<ApplicationUser> userManager) // Modified
         {
             _courseService = courseService;
+            _userManager = userManager; // Added
         }
 
         public LessonDetailVm? Lesson { get; set; }
@@ -24,7 +29,8 @@ namespace Learnly.Pages.Lessons
                 return NotFound();
             }
 
-            Lesson = await _courseService.GetLessonDetailsById(lessonId.Value);
+            var userId = _userManager.GetUserId(User); // Added
+            Lesson = await _courseService.GetLessonDetailsById(lessonId.Value, userId); // Modified
 
             if (Lesson == null)
             {

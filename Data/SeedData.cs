@@ -35,81 +35,61 @@ namespace Learnly.Data
                 }
             }
 
-            var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+                        var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
-            // Seed Admin, Instructor, and User
-            await EnsureUserWithRoleAsync(userManager, logger, "admin@learnly.com", "admin", "Admin", "User", "Admin@123", Roles.Admin);
-            await EnsureUserWithRoleAsync(userManager, logger, "instructor@learnly.com", "instructor", "Instructor", "User", "Instructor@123", Roles.Instructor);
-            await EnsureUserWithRoleAsync(userManager, logger, "user@learnly.com", "user", "Regular", "User", "User@123", Roles.User);
+            
 
-            var context = serviceProvider.GetRequiredService<ApplicationDbContext>();
+                        // Seed Admin, Instructor, and User
 
-            // Look for any courses.
-            if (context.Courses.Any())
-            {
-                logger.LogInformation("Database already seeded with courses. Skipping course seeding.");
-                return;   // DB has been seeded
-            }
+                        await EnsureUserWithRoleAsync(userManager, logger, "admin@learnly.com", "admin", "Admin", "User", "Admin@123", Roles.Admin);
 
-            // Ensure instructor exists
-            var instructorUser = await userManager.FindByEmailAsync("instructor@learnly.com");
-            if (instructorUser == null)
-            {
-                logger.LogError("Instructor user not found. Cannot seed courses without an instructor.");
-                return;
-            }
+                        await EnsureUserWithRoleAsync(userManager, logger, "instructor@learnly.com", "instructor", "Instructor", "User", "Instructor@123", Roles.Instructor);
 
-            var course = new Course
-            {
-                Title = "Intro to MVC",
-                Slug = "intro-to-mvc",
-                Description = "A beginner-friendly introduction to the Model-View-Controller architectural pattern in web development.",
-                InstructorId = instructorUser.Id,
-                Price = 19.99m,
-                ThumbnailPath = "/img/course-thumbnails/mvc-thumb.jpg", // Placeholder thumbnail
-                CreatedAt = DateTime.UtcNow,
-                IsPublished = true
-            };
-            context.Courses.Add(course);
-            await context.SaveChangesAsync();
-            logger.LogInformation("Course '{CourseTitle}' seeded.", course.Title);
+                        await EnsureUserWithRoleAsync(userManager, logger, "user@learnly.com", "user", "Regular", "User", "User@123", Roles.User);
 
+            
 
-            var module1 = new Module
-            {
-                CourseId = course.Id,
-                Title = "Module 1: Understanding MVC",
-                OrderIndex = 1
-            };
-            var module2 = new Module
-            {
-                CourseId = course.Id,
-                Title = "Module 2: Building Your First MVC App",
-                OrderIndex = 2
-            };
-            context.Modules.AddRange(module1, module2);
-            await context.SaveChangesAsync();
-            logger.LogInformation("Modules for course '{CourseTitle}' seeded.", course.Title);
+                                    var context = serviceProvider.GetRequiredService<ApplicationDbContext>();
 
-            var lessonsModule1 = new Lesson[]
-            {
-                new Lesson { ModuleId = module1.Id, Title = "What is MVC?", ContentType = ContentType.Video, VideoPath = "/videos/placeholder.mp4", DurationSeconds = 300, OrderIndex = 1 },
-                new Lesson { ModuleId = module1.Id, Title = "The Model Layer", ContentType = ContentType.Video, VideoPath = "/videos/placeholder.mp4", DurationSeconds = 450, OrderIndex = 2 },
-                new Lesson { ModuleId = module1.Id, Title = "The View Layer", ContentType = ContentType.Video, VideoPath = "/videos/placeholder.mp4", DurationSeconds = 380, OrderIndex = 3 }
-            };
-            var lessonsModule2 = new Lesson[]
-            {
-                new Lesson { ModuleId = module2.Id, Title = "The Controller Layer", ContentType = ContentType.Video, VideoPath = "/videos/placeholder.mp4", DurationSeconds = 400, OrderIndex = 1 },
-                new Lesson { ModuleId = module2.Id, Title = "Routing in MVC", ContentType = ContentType.Video, VideoPath = "/videos/placeholder.mp4", DurationSeconds = 520, OrderIndex = 2 },
-                new Lesson { ModuleId = module2.Id, Title = "Putting It All Together", ContentType = ContentType.Video, VideoPath = "/videos/placeholder.mp4", DurationSeconds = 600, OrderIndex = 3 }
-            };
-            context.Lessons.AddRange(lessonsModule1);
-            context.Lessons.AddRange(lessonsModule2);
-            await context.SaveChangesAsync();
-            logger.LogInformation("Lessons for course '{CourseTitle}' seeded.", course.Title);
-        }
+            
 
-        private static async Task EnsureUserWithRoleAsync(UserManager<ApplicationUser> userManager, ILogger logger,
+                        
+
+            
+
+                                    // Look for any courses.
+
+            
+
+                                    if (context.Courses.Any())
+
+            
+
+                                    {
+
+            
+
+                                        logger.LogInformation("Database already seeded with courses. Skipping course seeding.");
+
+            
+
+                                        return;   // DB has been seeded
+
+            
+
+                                    }
+
+            
+
+                                }
+
+            
+
+                        
+
+            
+
+                                private static async Task EnsureUserWithRoleAsync(UserManager<ApplicationUser> userManager, ILogger logger,
             string email, string userName, string firstName, string lastName, string password, string role)
         {
             var user = await userManager.FindByEmailAsync(email);

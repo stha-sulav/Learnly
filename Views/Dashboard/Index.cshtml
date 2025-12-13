@@ -1,0 +1,50 @@
+@model Learnly.ViewModels.DashboardViewModel
+@{
+    ViewData["Title"] = "My Dashboard";
+}
+
+<div class="container mt-4">
+    <h1 class="mb-4">My Dashboard</h1>
+
+    @if (!Model.EnrolledCourses.Any())
+    {
+        <div class="alert alert-info" role="alert">
+            You are not enrolled in any courses yet. Browse our <a href="/Courses">course catalog</a> to get started!
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var course in Model.EnrolledCourses)
+            {
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        <img src="@course.ThumbnailPath" class="card-img-top" alt="@course.Title Thumbnail" style="height: 180px; object-fit: cover;">
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">@course.Title</h5>
+                            <div class="progress mb-2" style="height: 20px;">
+                                <div class="progress-bar bg-primary" role="progressbar" style="width: @(course.ProgressPercent)%;" aria-valuenow="@course.ProgressPercent" aria-valuemin="0" aria-valuemax="100">
+                                    @course.ProgressPercent%
+                                </div>
+                            </div>
+                            <p class="card-text">Progress: @course.ProgressPercent%</p>
+                            
+                            <div class="mt-auto"> @* Pushes buttons to the bottom *@
+                                @if (course.FirstIncompleteLessonId.HasValue)
+                                {
+                                    <a href="/Lessons/View?lessonId=@course.FirstIncompleteLessonId" class="btn btn-primary btn-sm d-block">
+                                        Continue with: @course.FirstIncompleteLessonTitle
+                                    </a>
+                                }
+                                else
+                                {
+                                    <a href="/Courses/Details/@course.Slug" class="btn btn-secondary btn-sm d-block">View Course</a>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

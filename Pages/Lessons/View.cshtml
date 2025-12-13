@@ -30,7 +30,20 @@ else
                 @if (Model.Lesson!.ContentType == Learnly.Models.ContentType.Video)
                 {
                     <div class="ratio ratio-16x9 mb-4">
-                        <video id="lessonVideo" controls class="w-100" src="@Model.Lesson!.ContentPath" poster="/img/video-placeholder.png"></video>
+                        <video id="lesson-video" controls class="w-100" src="/videos/protected/@Model.Lesson.CourseId/@Model.Lesson.ModuleId/@Model.Lesson.Id" poster="/img/video-placeholder.png"></video>
+                    </div>
+                    <p class="text-muted">Duration: @(Model.Lesson.DurationSeconds / 60)m @(Model.Lesson.DurationSeconds % 60)s</p>
+                    <div class="mb-4" id="lesson-data" data-lesson-id="@Model.Lesson!.Id" data-initial-position="@Model.Lesson.PositionSeconds">
+                        <button id="mark-as-completed-btn" class="btn btn-success" @(Model.Lesson.IsCompleted ? "disabled" : "")>
+                            @if (Model.Lesson.IsCompleted)
+                            {
+                                <i class="bi bi-check-circle-fill me-2"></i> @:Completed
+                            }
+                            else
+                            {
+                                <i class="bi bi-check-circle me-2"></i> @:Mark as Completed
+                            }
+                        </button>
                     </div>
                     @if (!string.IsNullOrEmpty(Model.Lesson!.Transcript))
                     {
@@ -76,23 +89,6 @@ else
                     {
                         <span></span> @* Spacer for alignment *@
                     }
-
-                    @if (!Model.Lesson!.IsCompleted)
-                    {
-                        <form method="post" asp-page-handler="MarkComplete">
-                            <input type="hidden" name="lessonId" value="@Model.Lesson!.Id" />
-                            <button type="submit" class="btn btn-success">
-                                Mark Complete <i class="bi bi-check-circle ms-2"></i>
-                            </button>
-                        </form>
-                    }
-                    else
-                    {
-                        <button type="button" class="btn btn-success" disabled>
-                            Completed <i class="bi bi-check-circle-fill ms-2"></i>
-                        </button>
-                    }
-
 
                     @if (Model.Lesson!.NextLessonId != null)
                     {
@@ -140,52 +136,5 @@ else
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.js"></script>
-    @if (Model.Lesson!.ContentType == Learnly.Models.ContentType.Video)
-    {
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                const video = document.getElementById('lessonVideo');
-                if (video) {
-                    let lastSentTime = @Model.Lesson!.PositionSeconds;
-                    video.currentTime = lastSentTime;
-
-                    let throttled = false;
-                    video.addEventListener('timeupdate', function () {
-                        if (!throttled) {
-                            throttled = true;
-                            setTimeout(function () {
-                                const currentTime = Math.floor(video.currentTime);
-                                if (Math.abs(currentTime - lastSentTime) >= 10) { // Send every 10 seconds or more
-                                    sendProgress(currentTime);
-                                    lastSentTime = currentTime;
-                                }
-                                throttled = false;
-                            }, 10000); // 10 seconds throttle
-                        }
-                    });
-
-                    // Also send progress when video ends
-                    video.addEventListener('ended', function() {
-                        sendProgress(Math.floor(video.duration), true);
-                    });
-
-                    async function sendProgress(positionSeconds, completed = false) {
-                        const lessonId = @Model.Lesson!.Id;
-                        const response = await fetch(`/api/lessons/${lessonId}/progress`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value // If CSRF token is used
-                            },
-                            body: JSON.stringify({ positionSeconds: positionSeconds, completed: completed })
-                        });
-
-                        if (!response.ok) {
-                            console.error('Failed to send progress update.');
-                        }
-                    }
-                }
-            });
-        </script>
-    }
+    <script src="~/js/lesson-player.js"></script>
 }

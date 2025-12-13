@@ -25,7 +25,15 @@
     </div>
     <div class="row mt-4">
         <div class="col-md-12">
-            <a asp-controller="Instructor" asp-action="Create" class="btn btn-primary">Create New Course</a>
+            <div class="card">
+                <div class="card-header">
+                    Instructor Actions
+                </div>
+                <div class="card-body">
+                    <a asp-controller="Instructor" asp-action="Create" class="btn btn-primary">Create New Course</a>
+                    <a asp-controller="Instructor" asp-action="MyCourses" class="btn btn-secondary">My Courses</a>
+                </div>
+            </div>
         </div>
     </div>
 </div>

@@ -11,6 +11,8 @@ namespace Learnly.ViewModels
         public required string ThumbnailPath { get; set; }
         public required string InstructorName { get; set; }
         public required string ShortDescription { get; set; }
+        public decimal Price { get; set; }
         public int? ProgressPercent { get; set; }
+        public bool IsPublished { get; set; }
     }
 }

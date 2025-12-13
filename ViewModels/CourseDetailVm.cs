@@ -13,14 +13,6 @@ namespace Learnly.ViewModels
         public bool IsCompleted { get; set; }
     }
 
-    public class ModuleVm
-    {
-        public int Id { get; set; }
-        public required string Title { get; set; }
-        public int Order { get; set; }
-        public List<LessonVm> Lessons { get; set; } = new List<LessonVm>();
-    }
-
     public class CourseDetailVm
     {
         public int Id { get; set; }

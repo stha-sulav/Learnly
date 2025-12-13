@@ -1,3 +1,4 @@
+using Learnly.Models.Enums;
 using Microsoft.AspNetCore.Identity;
 using System;
 using System.Collections.Generic;
@@ -17,5 +18,7 @@ namespace Learnly.Models
         public DateTime? LastLoginDate { get; set; }
 
         public ICollection<Course> CoursesCreated { get; set; } = new HashSet<Course>();
+
+        public UserStatus Status { get; set; } = UserStatus.Active;
     }
 }

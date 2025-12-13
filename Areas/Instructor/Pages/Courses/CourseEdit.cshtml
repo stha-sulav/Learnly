@@ -1,0 +1,280 @@
+@page "{id:int?}"
+@model Learnly.Areas.Instructor.Pages.Courses.CourseEditModel
+@{
+    ViewData["Title"] = Model.IsEditMode ? "Edit Course" : "Create New Course";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>@ViewData["Title"]</h1>
+        <a asp-page="./CourseList" class="btn btn-outline-secondary">Back to Courses</a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form method="post">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                <input type="hidden" asp-for="Course.Id" />
+
+                <div class="mb-3">
+                    <label asp-for="Course.Title" class="form-label"></label>
+                    <input asp-for="Course.Title" class="form-control" />
+                    <span asp-validation-for="Course.Title" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Course.Slug" class="form-label"></label>
+                    <input asp-for="Course.Slug" class="form-control" />
+                    <span asp-validation-for="Course.Slug" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Course.Description" class="form-label"></label>
+                    <textarea asp-for="Course.Description" class="form-control" rows="5"></textarea>
+                    <span asp-validation-for="Course.Description" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Course.Price" class="form-label"></label>
+                    <input asp-for="Course.Price" class="form-control" />
+                    <span asp-validation-for="Course.Price" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Course.CategoryId" class="form-label"></label>
+                    <select asp-for="Course.CategoryId" asp-items="Model.Categories" class="form-select">
+                        <option value="">-- Select Category --</option>
+                    </select>
+                    <span asp-validation-for="Course.CategoryId" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Course.ThumbnailPath" class="form-label"></label>
+                    <input asp-for="Course.ThumbnailPath" class="form-control" />
+                    <span asp-validation-for="Course.ThumbnailPath" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3 form-check">
+                    <input type="checkbox" asp-for="Course.IsPublished" class="form-check-input" />
+                    <label class="form-check-label" asp-for="Course.IsPublished"></label>
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save me-2"></i> @(Model.IsEditMode ? "Update Course" : "Create Course")
+                </button>
+            </form>
+        </div>
+    </div>
+
+    @if (Model.IsEditMode)
+    {
+        <div class="card shadow-sm mt-4">
+            <div class="card-header">
+                <h3>Modules & Lessons</h3>
+            </div>
+            <div class="card-body">
+                <div id="modules-container">
+                    <!-- Modules will be loaded here dynamically -->
+                </div>
+                <div class="mt-3">
+                    <input type="text" id="new-module-title" class="form-control d-inline-block" style="width: auto;" placeholder="New Module Title" />
+                    <button id="add-module-btn" class="btn btn-secondary">Add Module</button>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+
+    @if (Model.IsEditMode)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const courseId = @Model.Course.Id;
+                const modulesContainer = document.getElementById('modules-container');
+                const addModuleBtn = document.getElementById('add-module-btn');
+                const newModuleTitleInput = document.getElementById('new-module-title');
+                const requestVerificationToken = document.querySelector('meta[name="RequestVerificationToken"]').content;
+
+                async function loadModules() {
+                    showSpinner(modulesContainer);
+                    try {
+                        const response = await fetch(`/api/Modules/ByCourse/${courseId}`);
+                        if (!response.ok) {
+                            showAlert('Failed to load modules.', 'error');
+                            return;
+                        }
+                        const modules = await response.json();
+                        renderModules(modules);
+                    } catch (error) {
+                        showAlert('An error occurred while loading modules.', 'error');
+                    } finally {
+                        hideSpinner(modulesContainer);
+                    }
+                }
+
+                function renderModules(modules) {
+                    modulesContainer.innerHTML = '';
+                    modules.forEach(module => {
+                        const moduleEl = document.createElement('div');
+                        moduleEl.className = 'module-item card mb-3';
+                        moduleEl.innerHTML = `
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5>${module.title}</h5>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-group list-group-flush" id="lessons-for-module-${module.id}">
+                                    <!-- Lessons will be loaded here -->
+                                </ul>
+                                <div class="mt-3">
+                                    <input type="text" id="new-lesson-title-${module.id}" class="form-control d-inline-block" style="width: auto;" placeholder="New Lesson Title" />
+                                    <input type="file" id="lesson-video-upload-${module.id}" class="form-control d-inline-block" style="width: auto;" accept="video/*" />
+                                    <button class="btn btn-sm btn-success add-lesson-btn" data-module-id="${module.id}">Add Lesson</button>
+                                </div>
+                            </div>
+                        `;
+                        modulesContainer.appendChild(moduleEl);
+                        loadLessons(module.id);
+                    });
+                }
+
+                async function loadLessons(moduleId) {
+                    const lessonsContainer = document.getElementById(`lessons-for-module-${moduleId}`);
+                    showSpinner(lessonsContainer);
+                    try {
+                        const response = await fetch(`/api/Lessons/ByModule/${moduleId}`);
+                        if (!response.ok) {
+                            showAlert(`Failed to load lessons for module ${moduleId}.`, 'error');
+                            return;
+                        }
+                        const lessons = await response.json();
+                        renderLessons(moduleId, lessons);
+                    } catch (error) {
+                        showAlert(`An error occurred while loading lessons for module ${moduleId}.`, 'error');
+                    } finally {
+                        hideSpinner(lessonsContainer);
+                    }
+                }
+
+                function renderLessons(moduleId, lessons) {
+                    const lessonsContainer = document.getElementById(`lessons-for-module-${moduleId}`);
+                    lessonsContainer.innerHTML = '';
+                    if (lessons.length === 0) {
+                        lessonsContainer.innerHTML = '<li class="list-group-item">No lessons yet.</li>';
+                        return;
+                    }
+                    lessons.forEach(lesson => {
+                        const lessonEl = document.createElement('li');
+                        lessonEl.className = 'list-group-item d-flex justify-content-between align-items-center';
+                        lessonEl.innerHTML = `
+                            <span>${lesson.title}</span>
+                            ${lesson.contentPath ? `<a href="${lesson.contentPath}" target="_blank" class="btn btn-sm btn-info">View Video</a>` : ''}
+                        `;
+                        lessonsContainer.appendChild(lessonEl);
+                    });
+                }
+
+                addModuleBtn.addEventListener('click', async function () {
+                    const title = newModuleTitleInput.value;
+                    if (!title) {
+                        showAlert('Please enter a module title.', 'warning');
+                        return;
+                    }
+
+                    showSpinner(addModuleBtn);
+                    try {
+                        const response = await fetch(`/api/Modules/ByCourse/${courseId}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': requestVerificationToken },
+                            body: JSON.stringify({ title: title, orderIndex: modulesContainer.children.length + 1 })
+                        });
+
+                        if (response.ok) {
+                            newModuleTitleInput.value = '';
+                            loadModules();
+                            showAlert('Module added successfully.', 'success');
+                        } else {
+                            showAlert('Failed to add module.', 'error');
+                        }
+                    } catch (error) {
+                        showAlert('An error occurred while adding the module.', 'error');
+                    } finally {
+                        hideSpinner(addModuleBtn);
+                    }
+                });
+
+                modulesContainer.addEventListener('click', function (e) {
+                    if (e.target.classList.contains('add-lesson-btn')) {
+                        const moduleId = e.target.dataset.moduleId;
+                        const lessonTitleInput = document.getElementById(`new-lesson-title-${moduleId}`);
+                        const videoFileInput = document.getElementById(`lesson-video-upload-${moduleId}`);
+                        const title = lessonTitleInput.value;
+                        const file = videoFileInput.files[0];
+
+                        if (!title) {
+                            showAlert('Please enter a lesson title.', 'warning');
+                            return;
+                        }
+
+                        addLesson(moduleId, title, file);
+                    }
+                });
+
+                async function addLesson(moduleId, title, file) {
+                    const addLessonBtn = document.querySelector(`.add-lesson-btn[data-module-id="${moduleId}"]`);
+                    showSpinner(addLessonBtn);
+
+                    try {
+                        // 1. Create the lesson
+                        const lessonResponse = await fetch(`/api/Lessons/ByModule/${moduleId}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': requestVerificationToken },
+                            body: JSON.stringify({ title: title, contentType: 0, durationSeconds: 0, order: 0 }) // Assuming ContentType.Video = 0
+                        });
+
+                        if (!lessonResponse.ok) {
+                            showAlert('Failed to create lesson.', 'error');
+                            hideSpinner(addLessonBtn);
+                            return;
+                        }
+
+                        const lesson = await lessonResponse.json();
+                        showAlert('Lesson created. Uploading video...', 'info');
+
+                        // 2. Upload the video if a file is provided
+                        if (file) {
+                            const formData = new FormData();
+                            formData.append('file', file);
+
+                            const uploadResponse = await fetch(`/api/Lessons/${lesson.id}/upload-video`, {
+                                method: 'POST',
+                                headers: { 'RequestVerificationToken': requestVerificationToken },
+                                body: formData
+                            });
+
+                            if (uploadResponse.ok) {
+                                showAlert('Video uploaded successfully!', 'success');
+                            } else {
+                                const errorData = await uploadResponse.json();
+                                showAlert(`Video upload failed: ${errorData.error}`, 'error');
+                            }
+                        }
+
+                        // 3. Refresh lessons for the module
+                        loadLessons(moduleId);
+
+                    } catch (error) {
+                        showAlert('An error occurred while adding the lesson.', 'error');
+                    } finally {
+                        hideSpinner(addLessonBtn);
+                    }
+                }
+
+                // Initial load
+                loadModules();
+            });
+        </script>
+    }
+}

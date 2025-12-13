@@ -35,7 +35,17 @@ namespace Learnly.Controllers
         public async Task<IActionResult> Users()
         {
             var users = await _userManager.Users.ToListAsync();
-            return View(users);
+            var usersWithRoles = new List<UserWithRolesViewModel>();
+            foreach (var user in users)
+            {
+                var roles = await _userManager.GetRolesAsync(user);
+                usersWithRoles.Add(new UserWithRolesViewModel
+                {
+                    User = user,
+                    Roles = roles
+                });
+            }
+            return View(usersWithRoles);
         }
 
         // GET: Admin/EditUser/{id}
@@ -89,5 +99,30 @@ namespace Learnly.Controllers
             ModelState.AddModelError(string.Empty, "An error occurred while updating the user profile.");
             return View(model);
         }
+
+        // POST: Admin/UpdateUserStatus
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateUserStatus(string userId, Learnly.Models.Enums.UserStatus status)
+        {
+            if (string.IsNullOrEmpty(userId))
+            {
+                return NotFound();
+            }
+
+            var success = await _adminService.UpdateUserStatusAsync(userId, status);
+
+            if (success)
+            {
+                TempData["StatusMessage"] = $"User status updated to {status.ToString()}.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Error updating user status.";
+            }
+
+            return RedirectToAction(nameof(Users));
+        }
     }
 }
+

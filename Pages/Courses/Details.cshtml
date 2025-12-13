@@ -23,11 +23,18 @@ else
                 <div class="d-grid gap-2 mb-4">
                     @if (Model.Course.IsEnrolled)
                     {
-                        <button class="btn btn-success btn-lg" disabled>Enrolled</button>
+                        <button class="btn btn-success btn-lg" disabled><i class="bi bi-check-circle-fill me-2"></i> Enrolled</button>
                     }
                     else
                     {
-                        <button class="btn btn-primary btn-lg">Enroll for $@Model.Course.Price</button>
+                        @if (Model.Course.Price == 0)
+                        {
+                            <button id="enroll-button" class="btn btn-primary btn-lg">Enroll for Free</button>
+                        }
+                        else
+                        {
+                            <button id="enroll-button" class="btn btn-primary btn-lg">Enroll for $@Model.Course.Price</button>
+                        }
                     }
                 </div>
 
@@ -87,4 +94,45 @@ else
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const enrollButton = document.getElementById('enroll-button');
+            if (enrollButton) {
+                enrollButton.addEventListener('click', async function () {
+                    const courseId = @Model.Course.Id;
+                    try {
+                        const response = await fetch(`/api/courses/${courseId}/enroll`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value // If CSRF token is used
+                            }
+                        });
+
+                        if (response.ok) {
+                            alert('Successfully enrolled in the course!');
+                            // Optionally, update the UI to show "Enrolled" state
+                            enrollButton.disabled = true;
+                            enrollButton.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i> Enrolled';
+                            location.reload(); // Reload the page to reflect enrollment status
+                        } else if (response.status === 409) {
+                            alert('You are already enrolled in this course.');
+                            enrollButton.disabled = true;
+                            enrollButton.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i> Enrolled';
+                        }
+                        else if (response.status === 401) {
+                            alert('Please log in to enroll in the course.');
+                            window.location.href = '/Identity/Account/Login';
+                        }
+                        else {
+                            alert('Failed to enroll in the course. Please try again.');
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('An error occurred during enrollment.');
+                    }
+                });
+            }
+        });
+    </script>
 }

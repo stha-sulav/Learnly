@@ -271,8 +271,4 @@ dotnet run
 
 ---
 
-## 18. File Storage & Media Handling
-
-- **All files in database**: Store images and videos as `varbinary(max)` in SQL Server.
-- **File validation**: Implement size limits and type validation.
-- **MIME type handling**: Proper content type detection for served files.
+--- End of Context from: GEMINI.md ---

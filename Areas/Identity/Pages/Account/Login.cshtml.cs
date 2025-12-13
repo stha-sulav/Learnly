@@ -113,6 +113,13 @@ namespace Learnly.Areas.Identity.Pages.Account
                     return Page();
                 }
 
+                // Check user status
+                if (user.Status == Learnly.Models.Enums.UserStatus.Suspended)
+                {
+                    ModelState.AddModelError(string.Empty, "Your account has been suspended. Please contact support.");
+                    return Page();
+                }
+
                 var result = await _signInManager.PasswordSignInAsync(user.UserName, Input.Password, Input.RememberMe, lockoutOnFailure: false);
                 if (result.Succeeded)
                 {

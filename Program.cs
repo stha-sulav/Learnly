@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
+using System.IO;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,10 +33,17 @@ builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IQuizService, QuizService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<ISuperAdminDashboardService, SuperAdminDashboardService>();
+builder.Services.AddScoped<IModuleService, ModuleService>();
+builder.Services.AddScoped<ILessonService, LessonService>();
+builder.Services.AddHostedService<FileCleanupService>();
 builder.Services.AddSignalR();
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
+
+// Add Swagger services
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
@@ -56,6 +65,8 @@ using (var scope = app.Services.CreateScope())
 if (app.Environment.IsDevelopment())
 {
     app.UseMigrationsEndPoint();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 else
 {
@@ -64,6 +75,7 @@ else
 }
 
 app.UseHttpsRedirection();
+
 app.UseStaticFiles();
 app.UseRouting();
 
@@ -71,7 +83,7 @@ app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+    pattern: "{controller=Dashboard}/{action=Index}/{id?}");
 
 app.MapRazorPages();
 

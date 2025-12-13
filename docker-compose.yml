@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  learnly-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+      - "8081:443"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Server=learnly-db;Database=Learnly_Prod;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True;
+    volumes:
+      - ./wwwroot/videos:/app/wwwroot/videos
+    depends_on:
+      - learnly-db
+
+  learnly-db:
+    image: "mcr.microsoft.com/mssql/server:2022-latest"
+    environment:
+      SA_PASSWORD: "${SA_PASSWORD}"
+      ACCEPT_EULA: "Y"
+    ports:
+      - "1433:1433"
+    volumes:
+      - learnly-db-data:/var/opt/mssql
+
+volumes:
+  learnly-db-data:

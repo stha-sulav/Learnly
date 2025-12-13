@@ -39,7 +39,8 @@ namespace Learnly.Controllers
         [HttpGet("{slug}")]
         public async Task<ActionResult<CourseDetailVm>> GetCourse(string slug)
         {
-            var course = await _courseService.GetCourseWithCurriculum(slug);
+            string? userId = _userManager.GetUserId(User); // Get current user ID (can be null if not logged in)
+            var course = await _courseService.GetCourseWithCurriculum(slug, userId);
 
             if (course == null)
             {
@@ -106,6 +107,58 @@ namespace Learnly.Controllers
             };
 
             return CreatedAtAction(nameof(GetCourse), new { slug = course.Slug }, courseDetailVm);
+        }
+
+        [HttpPost("{id}/enroll")]
+        [Authorize]
+        public async Task<IActionResult> Enroll(int id)
+        {
+            var userId = _userManager.GetUserId(User);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
+
+            var course = await _context.Courses.FindAsync(id);
+            if (course == null)
+            {
+                return NotFound("Course not found.");
+            }
+
+            // Check if already enrolled
+            var isEnrolled = await _courseService.IsUserEnrolledAsync(id, userId);
+            if (isEnrolled)
+            {
+                return Conflict("User is already enrolled in this course.");
+            }
+
+            var enrollment = new Enrollment
+            {
+                UserId = userId,
+                CourseId = id,
+                EnrolledAt = DateTime.UtcNow,
+                IsActive = true
+            };
+
+            _context.Enrollments.Add(enrollment);
+            await _context.SaveChangesAsync();
+
+            return Ok("Enrolled successfully.");
+        }
+
+        // GET: api/Users/{userId}/Courses
+        [HttpGet("~/api/users/{userId}/courses")]
+        [Authorize]
+        public async Task<ActionResult<IEnumerable<CourseDashboardVm>>> GetUserCourses(string userId)
+        {
+            var currentUserId = _userManager.GetUserId(User);
+            if (currentUserId != userId)
+            {
+                return Forbid("You are not authorized to view this user's courses.");
+            }
+
+            var courses = await _courseService.GetUserEnrolledCoursesAsync(userId);
+            return Ok(courses);
         }
 
         // PUT: api/Courses/5

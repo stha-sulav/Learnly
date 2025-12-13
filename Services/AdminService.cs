@@ -40,5 +40,23 @@ namespace Learnly.Services
                 TotalEnrollments = totalEnrollments // Added
             };
         }
+
+        public async Task<IEnumerable<Category>> GetCategoriesAsync()
+        {
+            return await _context.Categories.OrderBy(c => c.Name).ToListAsync();
+        }
+
+        public async Task<bool> UpdateUserStatusAsync(string userId, Models.Enums.UserStatus status)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return false;
+            }
+
+            user.Status = status;
+            var result = await _userManager.UpdateAsync(user);
+            return result.Succeeded;
+        }
     }
 }

@@ -1,8 +1,11 @@
+using System.Threading.Tasks; // Required for async operations
 using Learnly.Constants;
 using Learnly.Data;
+using Learnly.Models; // Ensure this is present and correct
 using Learnly.Services;
 using Learnly.ViewModels;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity; // Moved before Learnly.Models
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -14,11 +17,13 @@ namespace Learnly.Controllers
     {
         private readonly ICourseService _courseService;
         private readonly ApplicationDbContext _context;
+        private readonly UserManager<ApplicationUser> _userManager; // Inject UserManager
 
-        public InstructorController(ICourseService courseService, ApplicationDbContext context)
+        public InstructorController(ICourseService courseService, ApplicationDbContext context, UserManager<ApplicationUser> userManager) // Add UserManager to constructor
         {
             _courseService = courseService;
             _context = context;
+            _userManager = userManager; // Initialize UserManager
         }
 
         public IActionResult Index()
@@ -29,6 +34,19 @@ namespace Learnly.Controllers
                 TotalStudents = 0  // Replace with actual data later
             };
             return View(model);
+        }
+
+        // GET: Instructor/MyCourses
+        public async Task<IActionResult> MyCourses()
+        {
+            var userId = _userManager.GetUserId(User); // Get current instructor's ID
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
+
+            var instructorCourses = await _courseService.GetInstructorCourseSummaries(userId);
+            return View(instructorCourses);
         }
 
         // GET: Instructor/Create
@@ -58,7 +76,7 @@ namespace Learnly.Controllers
         {
             if (ModelState.IsValid)
             {
-                await _courseService.CreateCourse(courseDto);
+                await _courseService.CreateCourseAsync(courseDto);
                 return RedirectToAction(nameof(Index));
             }
 

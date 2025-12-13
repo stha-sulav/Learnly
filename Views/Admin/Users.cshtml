@@ -1,5 +1,7 @@
 @using Learnly.Models
-@model IEnumerable<ApplicationUser>
+@using Learnly.Models.Enums
+@using Learnly.ViewModels
+@model IEnumerable<UserWithRolesViewModel>
 
 @{
     ViewData["Title"] = "Manage Users";
@@ -13,19 +15,45 @@
             <th>Email</th>
             <th>First Name</th>
             <th>Last Name</th>
+            <th>Status</th>
+            <th>Role(s)</th>
             <th></th>
         </tr>
     </thead>
     <tbody>
-        @foreach (var user in Model)
+        @foreach (var userWithRoles in Model)
         {
+            var user = userWithRoles.User;
             <tr>
                 <td>@user.Email</td>
                 <td>@user.FirstName</td>
                 <td>@user.LastName</td>
                 <td>
+                    <span class="badge @(user.Status == UserStatus.Active ? "bg-success" : (user.Status == UserStatus.Suspended ? "bg-danger" : "bg-secondary"))">
+                        @user.Status
+                    </span>
+                </td>
+                <td>
+                    @string.Join(", ", userWithRoles.Roles)
+                </td>
+                <td>
                     <a asp-action="EditUser" asp-route-id="@user.Id" class="btn btn-sm btn-primary">Edit</a>
-                    <!-- Add Delete functionality if needed -->
+                    @if (user.Status == UserStatus.Active)
+                    {
+                        <form asp-action="UpdateUserStatus" asp-controller="Admin" method="post" style="display:inline;">
+                            <input type="hidden" name="userId" value="@user.Id" />
+                            <input type="hidden" name="status" value="@UserStatus.Suspended" />
+                            <button type="submit" class="btn btn-sm btn-warning">Block</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <form asp-action="UpdateUserStatus" asp-controller="Admin" method="post" style="display:inline;">
+                            <input type="hidden" name="userId" value="@user.Id" />
+                            <input type="hidden" name="status" value="@UserStatus.Active" />
+                            <button type="submit" class="btn btn-sm btn-success">Activate</button>
+                        </form>
+                    }
                 </td>
             </tr>
         }

@@ -28,7 +28,8 @@
                 @if (User.IsInRole(Roles.Instructor))
                 {
                     <li><a class="dropdown-item" asp-area="" asp-controller="Instructor" asp-action="Index">Dashboard</a></li>
-                    <li><a class="dropdown-item" asp-controller="Home" asp-action="MyCourses">My Courses</a></li>
+                    <li><a class="dropdown-item" asp-area="Instructor" asp-page="/Courses/CourseEdit">Create New Course</a></li>
+                    <li><a class="dropdown-item" asp-area="Instructor" asp-page="/Courses/CourseList">My Courses</a></li>
                 }
                 @if (User.IsInRole(Roles.Admin))
                 {

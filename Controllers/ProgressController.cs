@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
 
+using System.Security.Claims;
+
 namespace Learnly.Controllers
 {
     [ApiController]
@@ -77,8 +79,57 @@ namespace Learnly.Controllers
             }
 
             await _context.SaveChangesAsync();
-
             return Ok();
+        }
+
+        [HttpPatch("update-position")]
+        public async Task<IActionResult> UpdatePosition([FromBody] LessonPositionUpdateRequest request)
+        {
+            if (request == null || request.LessonId <= 0)
+            {
+                return BadRequest("Invalid request.");
+            }
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
+
+            var lessonProgress = await _context.LessonProgresses
+                .FirstOrDefaultAsync(p => p.LessonId == request.LessonId && p.UserId == userId);
+
+            if (lessonProgress == null)
+            {
+                lessonProgress = new LessonProgress
+                {
+                    LessonId = request.LessonId,
+                    UserId = userId,
+                    PositionSeconds = request.PositionSeconds,
+                    LastAccessed = DateTime.UtcNow,
+                    IsCompleted = false // Assume not completed on position update
+                };
+                _context.LessonProgresses.Add(lessonProgress);
+            }
+            else
+            {
+                lessonProgress.PositionSeconds = request.PositionSeconds;
+                lessonProgress.LastAccessed = DateTime.UtcNow;
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok();
+        }
+
+        public class LessonCompletionRequest
+        {
+            public int LessonId { get; set; }
+        }
+
+        public class LessonPositionUpdateRequest
+        {
+            public int LessonId { get; set; }
+            public int PositionSeconds { get; set; }
         }
     }
 }

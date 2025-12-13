@@ -1,0 +1,44 @@
+@model IEnumerable<Learnly.ViewModels.CourseSummaryVm>
+
+@{
+    ViewData["Title"] = "My Courses";
+}
+
+<div class="container mt-4">
+    <h1>@ViewData["Title"]</h1>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info" role="alert">
+            You haven't created any courses yet.
+        </div>
+    }
+    else
+    {
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Slug</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var course in Model)
+                {
+                    <tr>
+                        <td>@course.Title</td>
+                        <td>@course.Slug</td>
+                        <td>@(course.IsPublished ? "Published" : "Draft")</td>
+                        <td>
+                            <a asp-controller="Instructor" asp-action="EditCourse" asp-route-id="@course.Id" class="btn btn-sm btn-info">Edit</a>
+                            <a asp-controller="Instructor" asp-action="ManageLessons" asp-route-courseId="@course.Id" class="btn btn-sm btn-secondary">Manage Lessons</a>
+                            <a asp-controller="Courses" asp-action="Details" asp-route-slug="@course.Slug" class="btn btn-sm btn-primary">View Public</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
