@@ -1,6 +1,7 @@
 using Learnly.Models;
 using Learnly.Services;
 using Learnly.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -9,23 +10,27 @@ using System.Threading.Tasks;
 
 namespace Learnly.Pages.Courses
 {
-    public class IndexModel : PageModel
+    [Authorize]
+    public class EnrolledModel : PageModel
     {
         private readonly ICourseService _courseService;
         private readonly UserManager<ApplicationUser> _userManager;
 
-        public IndexModel(ICourseService courseService, UserManager<ApplicationUser> userManager)
+        public EnrolledModel(ICourseService courseService, UserManager<ApplicationUser> userManager)
         {
             _courseService = courseService;
             _userManager = userManager;
         }
 
-        public IEnumerable<CourseSummaryVm>? Courses { get; set; }
+        public IEnumerable<CourseDashboardVm>? EnrolledCourses { get; set; }
 
         public async Task OnGetAsync()
         {
             var userId = _userManager.GetUserId(User);
-            Courses = await _courseService.GetAvailableCoursesForUser(userId);
+            if (!string.IsNullOrEmpty(userId))
+            {
+                EnrolledCourses = await _courseService.GetUserEnrolledCoursesAsync(userId);
+            }
         }
     }
 }

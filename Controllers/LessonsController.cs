@@ -1,3 +1,4 @@
+using Learnly.Data;
 using Learnly.Models;
 using Learnly.Services;
 using Learnly.ViewModels;
@@ -5,9 +6,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Learnly.Controllers
@@ -18,11 +21,13 @@ namespace Learnly.Controllers
     {
         private readonly ILessonService _lessonService;
         private readonly IWebHostEnvironment _environment;
+        private readonly ApplicationDbContext _context;
 
-        public LessonsController(ILessonService lessonService, IWebHostEnvironment environment)
+        public LessonsController(ILessonService lessonService, IWebHostEnvironment environment, ApplicationDbContext context)
         {
             _lessonService = lessonService;
             _environment = environment;
+            _context = context;
         }
 
         // GET: api/Lessons/ByModule/5
@@ -159,6 +164,13 @@ namespace Learnly.Controllers
             {
                 return NotFound("Lesson not found.");
             }
+
+            // Delete lesson progresses for this lesson
+            var lessonProgresses = await _context.LessonProgresses
+                .Where(lp => lp.LessonId == lessonId)
+                .ToListAsync();
+            _context.LessonProgresses.RemoveRange(lessonProgresses);
+            await _context.SaveChangesAsync();
 
             // Delete thumbnail if exists
             if (!string.IsNullOrEmpty(lesson.ThumbnailPath))

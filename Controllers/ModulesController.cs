@@ -1,3 +1,4 @@
+using Learnly.Data;
 using Learnly.Models;
 using Learnly.Services;
 using Learnly.ViewModels;
@@ -5,9 +6,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Learnly.Controllers
@@ -19,12 +22,14 @@ namespace Learnly.Controllers
         private readonly IModuleService _moduleService;
         private readonly ILessonService _lessonService;
         private readonly IWebHostEnvironment _environment;
+        private readonly ApplicationDbContext _context;
 
-        public ModulesController(IModuleService moduleService, ILessonService lessonService, IWebHostEnvironment environment)
+        public ModulesController(IModuleService moduleService, ILessonService lessonService, IWebHostEnvironment environment, ApplicationDbContext context)
         {
             _moduleService = moduleService;
             _lessonService = lessonService;
             _environment = environment;
+            _context = context;
         }
 
         // GET: api/Modules/ByCourse/5
@@ -137,6 +142,15 @@ namespace Learnly.Controllers
 
             // First, delete all lessons in this module (with their files)
             var lessons = await _lessonService.GetLessonsByModuleAsync(moduleId);
+            var lessonIds = lessons.Select(l => l.Id).ToList();
+
+            // Delete lesson progresses for all lessons in this module
+            var lessonProgresses = await _context.LessonProgresses
+                .Where(lp => lessonIds.Contains(lp.LessonId))
+                .ToListAsync();
+            _context.LessonProgresses.RemoveRange(lessonProgresses);
+            await _context.SaveChangesAsync();
+
             foreach (var lesson in lessons)
             {
                 // Delete lesson thumbnail if exists

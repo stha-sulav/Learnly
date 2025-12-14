@@ -1,84 +1,77 @@
 @page
 @model Learnly.Pages.Courses.IndexModel
 @{
-    ViewData["Title"] = "Courses";
+    ViewData["Title"] = "Browse Courses";
 }
 
 <div class="container mt-4">
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb">
             <partial name="_HomeBreadcrumb" />
-            <li class="breadcrumb-item active" aria-current="page"><i class="bi bi-journals me-1"></i>Courses</li>
+            <li class="breadcrumb-item active" aria-current="page"><i class="bi bi-compass me-1"></i>Browse Courses</li>
         </ol>
     </nav>
 
-    <h1 class="mb-4">Course Catalog</h1>
+    <h1 class="mb-4">Browse Courses</h1>
 
-    <!-- Search Bar -->
-    <div class="row mb-4">
-        <div class="col-md-8 offset-md-2">
-            <div class="input-group">
-                <input type="text" class="form-control" placeholder="Search for courses..." aria-label="Search courses">
-                <button class="btn btn-primary" type="button">Search</button>
-            </div>
+    @if (Model.Courses == null || !Model.Courses.Any())
+    {
+        <div class="alert alert-info" role="alert">
+            <i class="bi bi-info-circle me-2"></i>No courses available at the moment. Check back later!
         </div>
-    </div>
-
-    <!-- Category Filters (Static for now) -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <h3 class="mb-3">Categories</h3>
-            <div class="btn-group" role="group" aria-label="Course categories">
-                <a href="#" class="btn btn-outline-secondary active">All</a>
-                <a href="#" class="btn btn-outline-secondary">Programming</a>
-                <a href="#" class="btn btn-outline-secondary">Web Development</a>
-                <a href="#" class="btn btn-outline-secondary">Data Science</a>
-                <a href="#" class="btn btn-outline-secondary">Design</a>
-            </div>
-        </div>
-    </div>
-
-    <!-- Course Grid -->
-    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-        @if (Model.Courses != null)
-        {
+    }
+    else
+    {
+        <div class="row">
             @foreach (var course in Model.Courses)
             {
-                <div class="col">
-                    <div class="card h-100 shadow-sm">
-                        @if (!string.IsNullOrEmpty(course.ThumbnailPath))
-                        {
-                            <img src="@course.ThumbnailPath" class="card-img-top" alt="@course.Title" style="height: 180px; object-fit: cover;">
-                        }
-                        else
-                        {
-                            <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center" style="height: 180px;">
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm border-0 course-card" style="cursor: pointer;" onclick="window.location.href='/Courses/Details/@course.Slug'">
+                        <div class="position-relative" style="height: 180px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <div class="d-flex align-items-center justify-content-center position-absolute top-0 start-0 w-100 h-100">
                                 <i class="bi bi-play-circle text-white" style="font-size: 4rem;"></i>
                             </div>
-                        }
+                            @if (!string.IsNullOrWhiteSpace(course.ThumbnailPath))
+                            {
+                                <img src="@course.ThumbnailPath" class="card-img-top position-absolute top-0 start-0 w-100 h-100" alt="@course.Title" style="object-fit: cover;" onerror="this.style.display='none';">
+                            }
+                        </div>
                         <div class="card-body d-flex flex-column">
-                            <h5 class="card-title">
-                                <a href="/Courses/Details/@course.Slug" class="text-decoration-none">@course.Title</a>
-                            </h5>
-                            <p class="card-text text-muted mb-1">By @course.InstructorName</p>
-                            <p class="card-text flex-grow-1">@course.ShortDescription</p>
-                            <div class="mt-auto">
-                                @if (course.ProgressPercent.HasValue)
-                                {
-                                    <span class="badge bg-info text-dark">Progress: @course.ProgressPercent%</span>
-                                }
-                                <a href="/Courses/Details/@course.Slug" class="btn btn-sm btn-outline-primary float-end">View Course</a>
+                            <h5 class="card-title mb-2">@course.Title</h5>
+
+                            <p class="text-muted small mb-2">
+                                <i class="bi bi-person me-1"></i>By @course.InstructorName
+                            </p>
+
+                            <p class="card-text text-muted small flex-grow-1">@course.ShortDescription</p>
+
+                            <div class="d-flex justify-content-between text-muted small mb-3 border-top border-bottom py-2">
+                                <span title="Modules"><i class="bi bi-collection me-1"></i>@course.ModuleCount Modules</span>
+                                <span title="Lessons"><i class="bi bi-play-btn me-1"></i>@course.LessonCount Lessons</span>
+                                <span title="Students"><i class="bi bi-people me-1"></i>@course.EnrolledStudents</span>
+                            </div>
+
+                            <div class="mt-auto" onclick="event.stopPropagation();">
+                                <a href="/Courses/Details/@course.Slug" class="btn btn-outline-primary btn-sm w-100">
+                                    <i class="bi bi-eye me-1"></i>View Course
+                                </a>
                             </div>
                         </div>
                     </div>
                 </div>
             }
-        }
-        else
-        {
-            <div class="col-12">
-                <p>No courses available at the moment.</p>
-            </div>
-        }
-    </div>
+        </div>
+    }
 </div>
+
+@section Scripts {
+    <style>
+        .course-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .course-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+        }
+    </style>
+}

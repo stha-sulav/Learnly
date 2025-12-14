@@ -3,10 +3,10 @@
 
 @{
     ViewData["Title"] = "Log in";
+    ViewData["HideNavFooter"] = true;
 }
 
-<h1>@ViewData["Title"]</h1>
-<div class="d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+<div class="d-flex justify-content-center align-items-center" style="min-height: 100vh;">
     <div class="card shadow-lg p-4" style="width: 100%; max-width: 400px;">
         <div class="card-body">
             <h1 class="card-title text-center mb-4">@ViewData["Title"]</h1>
@@ -31,13 +31,12 @@
                 <div>
                     <button id="login-submit" type="submit" class="w-100 btn btn-lg btn-primary">Log in</button>
                 </div>
-                <div class="d-flex justify-content-between mt-3">
-                    <p class="mb-0">
-                        <a id="forgot-password" asp-page="./ForgotPassword">Forgot your password?</a>
-                    </p>
-                    <p class="mb-0">
-                        <a asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl">Register</a>
-                    </p>
+                <div class="text-center mt-3">
+                    <a id="forgot-password" asp-page="./ForgotPassword" class="text-muted small">Forgot your password?</a>
+                </div>
+                <div class="text-center mt-3">
+                    <span class="text-muted">Don't have an account?</span>
+                    <a asp-page="./RegisterStudent" asp-route-returnUrl="@Model.ReturnUrl">Create an Account</a>
                 </div>
             </form>
         </div>

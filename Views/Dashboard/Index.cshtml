@@ -83,10 +83,10 @@
         <div class="col-md-4 mb-3">
             <div class="card h-100">
                 <div class="card-body text-center">
-                    <i class="bi bi-collection-play display-4 text-success mb-3"></i>
-                    <h5 class="card-title">My Courses</h5>
                     @if (User.IsInRole("Instructor"))
                     {
+                        <i class="bi bi-collection-play display-4 text-success mb-3"></i>
+                        <h5 class="card-title">My Courses</h5>
                         <p class="card-text text-muted">View and manage your courses</p>
                         <a asp-area="Instructor" asp-page="/Courses/CourseList" class="btn btn-success">
                             <i class="bi bi-arrow-right"></i> View Courses
@@ -94,9 +94,11 @@
                     }
                     else
                     {
+                        <i class="bi bi-bookmark-check display-4 text-success mb-3"></i>
+                        <h5 class="card-title">Enrolled Courses</h5>
                         <p class="card-text text-muted">Continue learning where you left off</p>
-                        <a asp-controller="Home" asp-action="MyCourses" class="btn btn-success">
-                            <i class="bi bi-arrow-right"></i> View Courses
+                        <a asp-page="/Courses/Enrolled" class="btn btn-success">
+                            <i class="bi bi-arrow-right"></i> View Enrolled
                         </a>
                     }
                 </div>
@@ -118,7 +120,12 @@
 
     @if (Model.EnrolledCourses.Any())
     {
-        <h4 class="mt-5 mb-3">Continue Learning</h4>
+        <div class="d-flex justify-content-between align-items-center mt-5 mb-3">
+            <h4 class="mb-0">Continue Learning</h4>
+            <a asp-page="/Courses/Enrolled" class="btn btn-outline-primary btn-sm">
+                View All <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
         <div class="row">
             @foreach (var course in Model.EnrolledCourses.Take(3))
             {
@@ -146,7 +153,7 @@
                             <div class="mt-auto">
                                 @if (course.FirstIncompleteLessonId.HasValue)
                                 {
-                                    <a href="/Lessons/View?lessonId=@course.FirstIncompleteLessonId" class="btn btn-primary btn-sm d-block">
+                                    <a href="/Lessons/View/@course.FirstIncompleteLessonId" class="btn btn-primary btn-sm d-block">
                                         <i class="bi bi-play-fill me-1"></i> Continue
                                     </a>
                                 }
@@ -162,31 +169,13 @@
                 </div>
             }
         </div>
-
-        @if (Model.EnrolledCourses.Count > 3)
-        {
-            <div class="text-center mt-3">
-                @if (User.IsInRole("Instructor"))
-                {
-                    <a asp-area="Instructor" asp-page="/Courses/CourseList" class="btn btn-outline-primary">
-                        View All Courses <i class="bi bi-arrow-right"></i>
-                    </a>
-                }
-                else
-                {
-                    <a asp-controller="Home" asp-action="MyCourses" class="btn btn-outline-primary">
-                        View All Courses <i class="bi bi-arrow-right"></i>
-                    </a>
-                }
-            </div>
-        }
     }
     else
     {
         <div class="alert alert-info mt-5" role="alert">
             <i class="bi bi-info-circle me-2"></i>
             You are not enrolled in any courses yet.
-            <a asp-controller="Courses" asp-action="Index" class="alert-link">Browse our course catalog</a> to get started!
+            <a asp-page="/Courses/Index" class="alert-link">Browse our course catalog</a> to get started!
         </div>
     }
 </div>

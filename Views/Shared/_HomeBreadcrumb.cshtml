@@ -1,10 +1,10 @@
 @using Learnly.Constants
 
 @{
-    string homeController = "Home";
+    string homeController = "Dashboard";
     string homeAction = "Index";
-    string homeIcon = "bi-house-door";
-    string homeText = "Home";
+    string homeIcon = "bi-speedometer2";
+    string homeText = "Dashboard";
 
     if (User.Identity != null && User.Identity.IsAuthenticated)
     {
@@ -17,9 +17,9 @@
         }
         else if (User.IsInRole(Roles.Instructor))
         {
-            homeController = "Instructor";
+            homeController = "Dashboard";
             homeAction = "Index";
-            homeIcon = "bi-mortarboard";
+            homeIcon = "bi-speedometer2";
             homeText = "Dashboard";
         }
         else if (User.IsInRole(Roles.User))

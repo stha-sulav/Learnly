@@ -43,6 +43,40 @@ namespace Learnly.Services
                 .ToListAsync();
         }
 
+        public async Task<IEnumerable<CourseSummaryVm>> GetAvailableCoursesForUser(string? userId)
+        {
+            // Get list of course IDs the user is enrolled in
+            var enrolledCourseIds = new List<int>();
+            if (!string.IsNullOrEmpty(userId))
+            {
+                enrolledCourseIds = await _context.Enrollments
+                    .Where(e => e.UserId == userId)
+                    .Select(e => e.CourseId)
+                    .ToListAsync();
+            }
+
+            return await _context.Courses
+                .Where(c => c.IsPublished && !enrolledCourseIds.Contains(c.Id))
+                .Select(c => new CourseSummaryVm
+                {
+                    Id = c.Id,
+                    Title = c.Title,
+                    Slug = c.Slug,
+                    ThumbnailPath = c.ThumbnailPath ?? string.Empty,
+                    InstructorName = c.Instructor!.DisplayName ?? "Unknown Instructor",
+                    ShortDescription = c.Description != null && c.Description.Length > 150 ? c.Description.Substring(0, 150) + "..." : c.Description ?? string.Empty,
+                    ProgressPercent = null,
+                    IsPublished = c.IsPublished,
+                    ModuleCount = c.Modules.Count,
+                    LessonCount = c.Modules.SelectMany(m => m.Lessons).Count(),
+                    EnrolledStudents = c.Enrollments.Count,
+                    CategoryName = c.Category != null ? c.Category.Name : null,
+                    CreatedAt = c.CreatedAt
+                })
+                .OrderByDescending(c => c.CreatedAt)
+                .ToListAsync();
+        }
+
         public async Task<CourseDetailVm?> GetCourseWithCurriculum(string slug, string? userId)
         {
             var courseQuery = _context.Courses

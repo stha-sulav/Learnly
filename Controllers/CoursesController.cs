@@ -333,6 +333,20 @@ namespace Learnly.Controllers
                 }
             }
 
+            // Delete all enrollments for this course
+            var enrollments = await _context.Enrollments.Where(e => e.CourseId == id).ToListAsync();
+            _context.Enrollments.RemoveRange(enrollments);
+
+            // Delete all lesson progresses for lessons in this course
+            var lessonIds = await _context.Lessons
+                .Where(l => l.Module.CourseId == id)
+                .Select(l => l.Id)
+                .ToListAsync();
+            var lessonProgresses = await _context.LessonProgresses
+                .Where(lp => lessonIds.Contains(lp.LessonId))
+                .ToListAsync();
+            _context.LessonProgresses.RemoveRange(lessonProgresses);
+
             _context.Courses.Remove(course);
             await _context.SaveChangesAsync();
 

@@ -11,7 +11,7 @@ using System.Security.Claims;
 namespace Learnly.Controllers
 {
     [ApiController]
-    [Route("api/lessons/{lessonId}/progress")]
+    [Route("api/[controller]")]
     public class ProgressController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -23,7 +23,94 @@ namespace Learnly.Controllers
             _userManager = userManager;
         }
 
-        [HttpPost]
+        [HttpPost("complete-lesson")]
+        public async Task<IActionResult> CompleteLesson([FromBody] LessonCompletionRequest request)
+        {
+            if (request == null || request.LessonId <= 0)
+            {
+                return BadRequest("Invalid request.");
+            }
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
+
+            // Verify lesson exists
+            var lesson = await _context.Lessons.FindAsync(request.LessonId);
+            if (lesson == null)
+            {
+                return NotFound("Lesson not found.");
+            }
+
+            var lessonProgress = await _context.LessonProgresses
+                .FirstOrDefaultAsync(p => p.LessonId == request.LessonId && p.UserId == userId);
+
+            if (lessonProgress == null)
+            {
+                lessonProgress = new LessonProgress
+                {
+                    LessonId = request.LessonId,
+                    UserId = userId,
+                    IsCompleted = true,
+                    CompletedAt = DateTime.UtcNow,
+                    LastAccessed = DateTime.UtcNow,
+                    PositionSeconds = 0
+                };
+                _context.LessonProgresses.Add(lessonProgress);
+            }
+            else
+            {
+                lessonProgress.IsCompleted = true;
+                lessonProgress.CompletedAt ??= DateTime.UtcNow;
+                lessonProgress.LastAccessed = DateTime.UtcNow;
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { success = true, message = "Lesson marked as completed." });
+        }
+
+        [HttpPatch("update-position")]
+        public async Task<IActionResult> UpdateLessonPosition([FromBody] LessonPositionUpdateRequest request)
+        {
+            if (request == null || request.LessonId <= 0)
+            {
+                return BadRequest("Invalid request.");
+            }
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
+
+            var lessonProgress = await _context.LessonProgresses
+                .FirstOrDefaultAsync(p => p.LessonId == request.LessonId && p.UserId == userId);
+
+            if (lessonProgress == null)
+            {
+                lessonProgress = new LessonProgress
+                {
+                    LessonId = request.LessonId,
+                    UserId = userId,
+                    PositionSeconds = request.PositionSeconds,
+                    LastAccessed = DateTime.UtcNow,
+                    IsCompleted = false
+                };
+                _context.LessonProgresses.Add(lessonProgress);
+            }
+            else
+            {
+                lessonProgress.PositionSeconds = request.PositionSeconds;
+                lessonProgress.LastAccessed = DateTime.UtcNow;
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok();
+        }
+
+        [HttpPost("lessons/{lessonId}")]
         public async Task<IActionResult> PostProgress(int lessonId, [FromBody] LessonProgressDto progressDto)
         {
             if (!User.Identity.IsAuthenticated)
@@ -76,45 +163,6 @@ namespace Learnly.Controllers
                     lessonProgress.CompletedAt = System.DateTime.UtcNow;
                 }
                 _context.LessonProgresses.Update(lessonProgress);
-            }
-
-            await _context.SaveChangesAsync();
-            return Ok();
-        }
-
-        [HttpPatch("update-position")]
-        public async Task<IActionResult> UpdatePosition([FromBody] LessonPositionUpdateRequest request)
-        {
-            if (request == null || request.LessonId <= 0)
-            {
-                return BadRequest("Invalid request.");
-            }
-
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized();
-            }
-
-            var lessonProgress = await _context.LessonProgresses
-                .FirstOrDefaultAsync(p => p.LessonId == request.LessonId && p.UserId == userId);
-
-            if (lessonProgress == null)
-            {
-                lessonProgress = new LessonProgress
-                {
-                    LessonId = request.LessonId,
-                    UserId = userId,
-                    PositionSeconds = request.PositionSeconds,
-                    LastAccessed = DateTime.UtcNow,
-                    IsCompleted = false // Assume not completed on position update
-                };
-                _context.LessonProgresses.Add(lessonProgress);
-            }
-            else
-            {
-                lessonProgress.PositionSeconds = request.PositionSeconds;
-                lessonProgress.LastAccessed = DateTime.UtcNow;
             }
 
             await _context.SaveChangesAsync();

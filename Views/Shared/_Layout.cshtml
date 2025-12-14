@@ -14,78 +14,57 @@
 </head>
 <body>
     <div id="alert-container"></div>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
+    @if (ViewData["HideNavFooter"] == null || !(bool)ViewData["HideNavFooter"])
+    {
+        <header>
+            <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+                <div class="container-fluid">
 
-                @{
-                    string homeController = "Home";
-                    string homeAction = "Index";
+                    <a class="navbar-brand" asp-controller="Dashboard" asp-action="Index">Learnly</a>
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                            aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
 
-                    if (User.Identity.IsAuthenticated)
-                    {
-                        if (User.IsInRole(Roles.Admin))
+                    <div class="navbar-nav ms-auto">
+                        @if (User.Identity != null && User.Identity.IsAuthenticated)
                         {
-                            homeController = "Admin";
-                            homeAction = "Index";
-                        }
-                        else if (User.IsInRole(Roles.Instructor))
-                        {
-                            homeController = "Instructor";
-                            homeAction = "Index";
-                        }
-                        else if (User.IsInRole(Roles.User)) // Assuming default student role is "User"
-                        {
-                            homeController = "Home";
-                            homeAction = "MyCourses"; // Default for students
-                        }
-                    }
-                }
-                <a class="navbar-brand" asp-area="" asp-controller="@homeController" asp-action="@homeAction">Learnly</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-
-                <div class="navbar-nav ms-auto">
-                    @if (User.Identity != null && User.Identity.IsAuthenticated)
-                    {
-                        <div class="d-flex align-items-center">
-                            @if (User.IsInRole(Roles.Instructor))
-                            {
-                                // The "Create Course" button was here and is now moved to the user dropdown.
-                            }
-                            <div class="nav-item dropdown">
-                                <a class="nav-link" href="#" id="notificationBell" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="bi bi-bell"></i>
-                                    <span id="notificationCounter" class="badge bg-danger rounded-pill position-absolute top-0 start-100 translate-middle d-none"></span>
-                                </a>
-                                <ul id="notificationList" class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationBell">
-                                    <li><a id="noNotificationsMessage" class="dropdown-item" href="#">No new notifications</a></li>
-                                </ul>
+                            <div class="d-flex align-items-center">
+                                @if (User.IsInRole(Roles.Instructor))
+                                {
+                                    // The "Create Course" button was here and is now moved to the user dropdown.
+                                }
+                                <div class="nav-item dropdown">
+                                    <a class="nav-link" href="#" id="notificationBell" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="bi bi-bell"></i>
+                                        <span id="notificationCounter" class="badge bg-danger rounded-pill position-absolute top-0 start-100 translate-middle d-none"></span>
+                                    </a>
+                                    <ul id="notificationList" class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationBell">
+                                        <li><a id="noNotificationsMessage" class="dropdown-item" href="#">No new notifications</a></li>
+                                    </ul>
+                                </div>
                             </div>
-                        </div>
-                    }
-                    <partial name="_LoginPartial" />
+                        }
+                        <partial name="_LoginPartial" />
+                    </div>
                 </div>
-            </div>
-        </nav>
-    </header>
+            </nav>
+        </header>
+    }
     <div class="container-fluid">
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container-fluid">
-            &copy; 2025 - Learnly
-            @if (!User.IsInRole(Roles.Admin))
-            {
-                <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-            }
-        </div>
-    </footer>
+    @if (ViewData["HideNavFooter"] == null || !(bool)ViewData["HideNavFooter"])
+    {
+        <footer class="border-top footer text-muted">
+            <div class="container-fluid">
+                &copy; 2025 - Learnly
+            </div>
+        </footer>
+    }
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/ui-helpers.js" asp-append-version="true"></script>

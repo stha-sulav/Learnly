@@ -8,6 +8,7 @@ namespace Learnly.Services
     public interface ICourseService
     {
         Task<IEnumerable<CourseSummaryVm>> GetPublicCourseSummaries();
+        Task<IEnumerable<CourseSummaryVm>> GetAvailableCoursesForUser(string? userId);
         Task<CourseDetailVm?> GetCourseWithCurriculum(string slug, string? userId); // Modified
         Task<LessonDetailVm?> GetLessonDetailsById(int lessonId, string? userId); // Modified
         Task<CourseDetailVm> CreateCourseAsync(CourseCreateUpdateDto courseDto); // Renamed and modified
