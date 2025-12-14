@@ -35,61 +35,46 @@ namespace Learnly.Data
                 }
             }
 
-                        var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
-            
+            // Seed Admin, Instructor, and User
+            await EnsureUserWithRoleAsync(userManager, logger, "admin@learnly.com", "admin", "Admin", "User", "Admin@123", Roles.Admin);
+            await EnsureUserWithRoleAsync(userManager, logger, "instructor@learnly.com", "instructor", "Instructor", "User", "Instructor@123", Roles.Instructor);
+            await EnsureUserWithRoleAsync(userManager, logger, "user@learnly.com", "user", "Regular", "User", "User@123", Roles.User);
 
-                        // Seed Admin, Instructor, and User
+            var context = serviceProvider.GetRequiredService<ApplicationDbContext>();
 
-                        await EnsureUserWithRoleAsync(userManager, logger, "admin@learnly.com", "admin", "Admin", "User", "Admin@123", Roles.Admin);
+            // Seed Categories
+            if (!context.Categories.Any())
+            {
+                var categories = new Category[]
+                {
+                    new Category { Name = "Development", Description = "Software development and programming courses" },
+                    new Category { Name = "Business", Description = "Business, entrepreneurship, and management courses" },
+                    new Category { Name = "Design", Description = "Graphic design, UI/UX, and creative courses" },
+                    new Category { Name = "Marketing", Description = "Digital marketing, SEO, and social media courses" },
+                    new Category { Name = "IT & Software", Description = "IT certifications, networking, and security courses" },
+                    new Category { Name = "Personal Development", Description = "Productivity, leadership, and personal growth courses" },
+                    new Category { Name = "Photography & Video", Description = "Photography, video production, and editing courses" },
+                    new Category { Name = "Music", Description = "Music production, instruments, and theory courses" },
+                    new Category { Name = "Health & Fitness", Description = "Fitness, nutrition, and wellness courses" },
+                    new Category { Name = "Teaching & Academics", Description = "Academic subjects and teaching methodology courses" }
+                };
 
-                        await EnsureUserWithRoleAsync(userManager, logger, "instructor@learnly.com", "instructor", "Instructor", "User", "Instructor@123", Roles.Instructor);
+                context.Categories.AddRange(categories);
+                await context.SaveChangesAsync();
+                logger.LogInformation("Seeded {Count} categories.", categories.Length);
+            }
 
-                        await EnsureUserWithRoleAsync(userManager, logger, "user@learnly.com", "user", "Regular", "User", "User@123", Roles.User);
+            // Look for any courses.
+            if (context.Courses.Any())
+            {
+                logger.LogInformation("Database already seeded with courses. Skipping course seeding.");
+                return;   // DB has been seeded
+            }
+        }
 
-            
-
-                                    var context = serviceProvider.GetRequiredService<ApplicationDbContext>();
-
-            
-
-                        
-
-            
-
-                                    // Look for any courses.
-
-            
-
-                                    if (context.Courses.Any())
-
-            
-
-                                    {
-
-            
-
-                                        logger.LogInformation("Database already seeded with courses. Skipping course seeding.");
-
-            
-
-                                        return;   // DB has been seeded
-
-            
-
-                                    }
-
-            
-
-                                }
-
-            
-
-                        
-
-            
-
-                                private static async Task EnsureUserWithRoleAsync(UserManager<ApplicationUser> userManager, ILogger logger,
+        private static async Task EnsureUserWithRoleAsync(UserManager<ApplicationUser> userManager, ILogger logger,
             string email, string userName, string firstName, string lastName, string password, string role)
         {
             var user = await userManager.FindByEmailAsync(email);

@@ -10,5 +10,13 @@ namespace Learnly.Services
         Task<AdminDashboardViewModel> GetDashboardStats();
         Task<IEnumerable<Category>> GetCategoriesAsync(); // New method
         Task<bool> UpdateUserStatusAsync(string userId, Models.Enums.UserStatus status);
+        Task<bool> DeleteUserAsync(string userId);
+
+        // Category CRUD
+        Task<IEnumerable<CategoryViewModel>> GetAllCategoriesAsync();
+        Task<CategoryViewModel?> GetCategoryByIdAsync(int id);
+        Task<Category> CreateCategoryAsync(CategoryViewModel model);
+        Task<bool> UpdateCategoryAsync(CategoryViewModel model);
+        Task<bool> DeleteCategoryAsync(int id);
     }
 }

@@ -33,7 +33,9 @@
                 }
                 @if (User.IsInRole(Roles.Admin))
                 {
-                    <li><a class="dropdown-item" asp-area="" asp-controller="Admin" asp-action="Index">Dashboard</a></li>
+                    <li><a class="dropdown-item" asp-area="" asp-controller="Admin" asp-action="Index"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
+                    <li><a class="dropdown-item" asp-area="" asp-controller="Admin" asp-action="Users"><i class="bi bi-people me-2"></i>Manage Users</a></li>
+                    <li><a class="dropdown-item" asp-area="" asp-controller="Admin" asp-action="Categories"><i class="bi bi-tags me-2"></i>Manage Categories</a></li>
                 }
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item" asp-controller="Account" asp-action="Manage">Manage Account</a></li>

@@ -63,6 +63,13 @@ namespace Learnly.Controllers
                 return NotFound();
             }
 
+            // Prevent editing admin users
+            if (await _userManager.IsInRoleAsync(user, Roles.Admin))
+            {
+                TempData["ErrorMessage"] = "Admin users cannot be edited.";
+                return RedirectToAction(nameof(Users));
+            }
+
             var model = await _accountService.GetAccountInfoAsync(user);
             // Optionally, add roles to the model if you want to manage them here
             return View(model);
@@ -89,6 +96,13 @@ namespace Learnly.Controllers
                 return NotFound();
             }
 
+            // Prevent editing admin users
+            if (await _userManager.IsInRoleAsync(user, Roles.Admin))
+            {
+                TempData["ErrorMessage"] = "Admin users cannot be edited.";
+                return RedirectToAction(nameof(Users));
+            }
+
             var success = await _accountService.UpdateAccountInfoAsync(user, model);
             if (success)
             {
@@ -110,6 +124,14 @@ namespace Learnly.Controllers
                 return NotFound();
             }
 
+            // Prevent changing status of admin users
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user != null && await _userManager.IsInRoleAsync(user, Roles.Admin))
+            {
+                TempData["ErrorMessage"] = "Admin users cannot be blocked or have their status changed.";
+                return RedirectToAction(nameof(Users));
+            }
+
             var success = await _adminService.UpdateUserStatusAsync(userId, status);
 
             if (success)
@@ -123,6 +145,154 @@ namespace Learnly.Controllers
 
             return RedirectToAction(nameof(Users));
         }
+
+        // POST: Admin/DeleteUser/{id}
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteUser(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                return NotFound();
+            }
+
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            // Prevent deleting admin users
+            if (await _userManager.IsInRoleAsync(user, Roles.Admin))
+            {
+                TempData["ErrorMessage"] = "Admin users cannot be deleted.";
+                return RedirectToAction(nameof(Users));
+            }
+
+            var success = await _adminService.DeleteUserAsync(id);
+
+            if (success)
+            {
+                TempData["StatusMessage"] = "User deleted successfully.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Error deleting user.";
+            }
+
+            return RedirectToAction(nameof(Users));
+        }
+
+        #region Category CRUD
+
+        // GET: Admin/Categories
+        public async Task<IActionResult> Categories()
+        {
+            var categories = await _adminService.GetAllCategoriesAsync();
+            return View(categories);
+        }
+
+        // GET: Admin/CreateCategory
+        [HttpGet]
+        public async Task<IActionResult> CreateCategory()
+        {
+            ViewBag.Categories = await _adminService.GetCategoriesAsync();
+            return View(new CategoryViewModel());
+        }
+
+        // POST: Admin/CreateCategory
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateCategory(CategoryViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                ViewBag.Categories = await _adminService.GetCategoriesAsync();
+                return View(model);
+            }
+
+            await _adminService.CreateCategoryAsync(model);
+            TempData["StatusMessage"] = "Category created successfully.";
+            return RedirectToAction(nameof(Categories));
+        }
+
+        // GET: Admin/EditCategory/{id}
+        [HttpGet]
+        public async Task<IActionResult> EditCategory(int id)
+        {
+            var category = await _adminService.GetCategoryByIdAsync(id);
+            if (category == null)
+            {
+                return NotFound();
+            }
+
+            ViewBag.Categories = (await _adminService.GetCategoriesAsync())
+                .Where(c => c.Id != id); // Exclude current category from parent options
+            return View(category);
+        }
+
+        // POST: Admin/EditCategory/{id}
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditCategory(int id, CategoryViewModel model)
+        {
+            if (id != model.Id)
+            {
+                return NotFound();
+            }
+
+            if (!ModelState.IsValid)
+            {
+                ViewBag.Categories = (await _adminService.GetCategoriesAsync())
+                    .Where(c => c.Id != id);
+                return View(model);
+            }
+
+            var success = await _adminService.UpdateCategoryAsync(model);
+            if (success)
+            {
+                TempData["StatusMessage"] = "Category updated successfully.";
+                return RedirectToAction(nameof(Categories));
+            }
+
+            TempData["ErrorMessage"] = "Error updating category.";
+            ViewBag.Categories = (await _adminService.GetCategoriesAsync())
+                .Where(c => c.Id != id);
+            return View(model);
+        }
+
+        // GET: Admin/DeleteCategory/{id}
+        [HttpGet]
+        public async Task<IActionResult> DeleteCategory(int id)
+        {
+            var category = await _adminService.GetCategoryByIdAsync(id);
+            if (category == null)
+            {
+                return NotFound();
+            }
+
+            return View(category);
+        }
+
+        // POST: Admin/DeleteCategory/{id}
+        [HttpPost, ActionName("DeleteCategory")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteCategoryConfirmed(int id)
+        {
+            var success = await _adminService.DeleteCategoryAsync(id);
+            if (success)
+            {
+                TempData["StatusMessage"] = "Category deleted successfully.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Cannot delete category. It may have courses or subcategories associated with it.";
+            }
+
+            return RedirectToAction(nameof(Categories));
+        }
+
+        #endregion
     }
 }
 

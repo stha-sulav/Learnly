@@ -24,6 +24,7 @@ namespace Learnly.Services
         {
             var model = new ManageAccountViewModel
             {
+                UserId = user.Id,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 Email = user.Email,

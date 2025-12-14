@@ -1,13 +1,25 @@
 @using Learnly.Models
 @using Learnly.Models.Enums
 @using Learnly.ViewModels
+@using Learnly.Constants
 @model IEnumerable<UserWithRolesViewModel>
 
 @{
     ViewData["Title"] = "Manage Users";
 }
 
-<h1>@ViewData["Title"]</h1>
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-action="Index">Dashboard</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Users</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>@ViewData["Title"]</h1>
+</div>
+
+<partial name="_StatusMessage" />
 
 <table class="table">
     <thead>
@@ -37,22 +49,32 @@
                     @string.Join(", ", userWithRoles.Roles)
                 </td>
                 <td>
-                    <a asp-action="EditUser" asp-route-id="@user.Id" class="btn btn-sm btn-primary">Edit</a>
-                    @if (user.Status == UserStatus.Active)
+                    @{
+                        var isAdmin = userWithRoles.Roles.Contains(Roles.Admin);
+                    }
+                    @if (!isAdmin)
                     {
-                        <form asp-action="UpdateUserStatus" asp-controller="Admin" method="post" style="display:inline;">
-                            <input type="hidden" name="userId" value="@user.Id" />
-                            <input type="hidden" name="status" value="@UserStatus.Suspended" />
-                            <button type="submit" class="btn btn-sm btn-warning">Block</button>
-                        </form>
+                        <a asp-action="EditUser" asp-route-id="@user.Id" class="btn btn-sm btn-primary">Edit</a>
+                        @if (user.Status == UserStatus.Active)
+                        {
+                            <form asp-action="UpdateUserStatus" asp-controller="Admin" method="post" style="display:inline;">
+                                <input type="hidden" name="userId" value="@user.Id" />
+                                <input type="hidden" name="status" value="@UserStatus.Suspended" />
+                                <button type="submit" class="btn btn-sm btn-warning">Block</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <form asp-action="UpdateUserStatus" asp-controller="Admin" method="post" style="display:inline;">
+                                <input type="hidden" name="userId" value="@user.Id" />
+                                <input type="hidden" name="status" value="@UserStatus.Active" />
+                                <button type="submit" class="btn btn-sm btn-success">Activate</button>
+                            </form>
+                        }
                     }
                     else
                     {
-                        <form asp-action="UpdateUserStatus" asp-controller="Admin" method="post" style="display:inline;">
-                            <input type="hidden" name="userId" value="@user.Id" />
-                            <input type="hidden" name="status" value="@UserStatus.Active" />
-                            <button type="submit" class="btn btn-sm btn-success">Activate</button>
-                        </form>
+                        <span class="text-muted">Protected</span>
                     }
                 </td>
             </tr>
