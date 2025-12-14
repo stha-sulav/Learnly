@@ -173,9 +173,9 @@
                             <small class="form-text text-muted">Accepted formats: JPG, PNG, GIF, WebP. Max size: 5MB</small>
                         </div>
                         <div class="mb-3">
-                            <label for="lesson-video-upload" class="form-label">Video File</label>
-                            <input type="file" id="lesson-video-upload" class="form-control" accept="video/*" />
-                            <small class="form-text text-muted">Supported formats: MP4. Max size: 500MB</small>
+                            <label for="lesson-video-upload" class="form-label">Video File <span class="text-danger">*</span></label>
+                            <input type="file" id="lesson-video-upload" class="form-control" accept="video/mp4" required />
+                            <small class="form-text text-muted">Supported format: MP4. Max size: 500MB. <strong>Required for all lessons.</strong></small>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -640,13 +640,39 @@
                         return;
                     }
 
+                    // Video file is required
+                    if (!videoFile) {
+                        showAlert('Please select a video file. Video is required for all lessons.', 'warning');
+                        return;
+                    }
+
+                    // Validate video file type
+                    if (videoFile.type !== 'video/mp4') {
+                        showAlert('Invalid video format. Only MP4 files are allowed.', 'warning');
+                        return;
+                    }
+
+                    // Validate video file size (500MB max)
+                    if (videoFile.size > 500 * 1024 * 1024) {
+                        showAlert('Video file is too large. Maximum size is 500MB.', 'warning');
+                        return;
+                    }
+
                     // Calculate the next order index
                     const module = modulesData.find(m => m.id == moduleId);
                     const lessonCount = module && module.lessons ? module.lessons.length : 0;
                     const orderIndex = lessonCount + 1;
 
+                    // Disable the button and show progress
+                    const addLessonBtn = document.getElementById('add-lesson-btn');
+                    const originalBtnText = addLessonBtn.innerHTML;
+                    addLessonBtn.disabled = true;
+                    addLessonBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Uploading...';
+
+                    let createdLessonId = null;
+
                     try {
-                        // Create lesson
+                        // Create lesson first
                         const lessonResponse = await fetch(`/api/Lessons/ByModule/${moduleId}`, {
                             method: 'POST',
                             headers: {
@@ -658,55 +684,61 @@
 
                         if (!lessonResponse.ok) {
                             const errorText = await lessonResponse.text();
-                            console.error('Failed to create lesson:', lessonResponse.status, errorText);
-                            showAlert(`Failed to create lesson: ${lessonResponse.status}`, 'error');
-                            return;
+                            throw new Error(`Failed to create lesson: ${errorText || lessonResponse.status}`);
                         }
 
                         const lesson = await lessonResponse.json();
+                        createdLessonId = lesson.id;
 
-                        // Upload thumbnail if provided
+                        // Upload video (required) - this must succeed
+                        const videoFormData = new FormData();
+                        videoFormData.append('file', videoFile);
+
+                        const uploadResponse = await fetch(`/api/Lessons/${lesson.id}/upload-video`, {
+                            method: 'POST',
+                            headers: { 'RequestVerificationToken': requestVerificationToken },
+                            body: videoFormData
+                        });
+
+                        if (!uploadResponse.ok) {
+                            const errorData = await uploadResponse.json().catch(() => ({}));
+                            throw new Error(errorData.error || 'Video upload failed. Please try again.');
+                        }
+
+                        // Upload thumbnail if provided (optional - don't fail if this fails)
                         if (thumbnailFile) {
                             const thumbnailFormData = new FormData();
                             thumbnailFormData.append('thumbnail', thumbnailFile);
 
-                            const thumbnailResponse = await fetch(`/api/Lessons/${lesson.id}/Thumbnail`, {
+                            await fetch(`/api/Lessons/${lesson.id}/Thumbnail`, {
                                 method: 'POST',
                                 headers: { 'RequestVerificationToken': requestVerificationToken },
                                 body: thumbnailFormData
                             });
-
-                            if (!thumbnailResponse.ok) {
-                                showAlert('Lesson created but thumbnail upload failed.', 'warning');
-                            }
                         }
 
-                        // Upload video if provided
-                        if (videoFile) {
-                            showAlert('Lesson created. Uploading video...', 'info');
-                            const videoFormData = new FormData();
-                            videoFormData.append('file', videoFile);
-
-                            const uploadResponse = await fetch(`/api/Lessons/${lesson.id}/upload-video`, {
-                                method: 'POST',
-                                headers: { 'RequestVerificationToken': requestVerificationToken },
-                                body: videoFormData
-                            });
-
-                            if (uploadResponse.ok) {
-                                showAlert('Lesson added successfully!', 'success');
-                            } else {
-                                showAlert('Lesson created but video upload failed.', 'warning');
-                            }
-                        } else {
-                            showAlert('Lesson added successfully.', 'success');
-                        }
-
+                        // Success!
                         addLessonModal.hide();
+                        showAlert('Lesson added successfully!', 'success');
                         loadModules();
 
                     } catch (error) {
-                        showAlert('An error occurred while adding the lesson.', 'error');
+                        // If lesson was created but video upload failed, delete the lesson
+                        if (createdLessonId) {
+                            try {
+                                await fetch(`/api/Lessons/${createdLessonId}`, {
+                                    method: 'DELETE',
+                                    headers: { 'RequestVerificationToken': requestVerificationToken }
+                                });
+                            } catch (deleteError) {
+                                console.error('Failed to cleanup lesson after video upload failure:', deleteError);
+                            }
+                        }
+                        showAlert(error.message || 'An error occurred while adding the lesson.', 'error');
+                    } finally {
+                        // Re-enable the button
+                        addLessonBtn.disabled = false;
+                        addLessonBtn.innerHTML = originalBtnText;
                     }
                 });
 

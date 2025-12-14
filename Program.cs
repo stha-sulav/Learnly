@@ -15,6 +15,12 @@ Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure Kestrel for large file uploads (500MB for videos)
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    serverOptions.Limits.MaxRequestBodySize = 524288000; // 500MB
+});
+
 // Get connection string from environment variable first, then fall back to appsettings.json
 var connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING")
     ?? builder.Configuration.GetConnectionString("DefaultConnection")
@@ -58,6 +64,12 @@ builder.Services.AddControllersWithViews()
         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
     });
 builder.Services.AddRazorPages();
+
+// Configure form options for large file uploads
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 524288000; // 500MB
+});
 
 // Add Swagger services
 builder.Services.AddEndpointsApiExplorer();

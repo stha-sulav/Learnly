@@ -482,3 +482,7 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Uploaded files (images, videos, thumbnails)
+wwwroot/uploads/
+wwwroot/videos/

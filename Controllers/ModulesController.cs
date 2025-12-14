@@ -17,11 +17,13 @@ namespace Learnly.Controllers
     public class ModulesController : ControllerBase
     {
         private readonly IModuleService _moduleService;
+        private readonly ILessonService _lessonService;
         private readonly IWebHostEnvironment _environment;
 
-        public ModulesController(IModuleService moduleService, IWebHostEnvironment environment)
+        public ModulesController(IModuleService moduleService, ILessonService lessonService, IWebHostEnvironment environment)
         {
             _moduleService = moduleService;
+            _lessonService = lessonService;
             _environment = environment;
         }
 
@@ -133,7 +135,35 @@ namespace Learnly.Controllers
                 return NotFound("Module not found.");
             }
 
-            // Delete thumbnail if exists
+            // First, delete all lessons in this module (with their files)
+            var lessons = await _lessonService.GetLessonsByModuleAsync(moduleId);
+            foreach (var lesson in lessons)
+            {
+                // Delete lesson thumbnail if exists
+                if (!string.IsNullOrEmpty(lesson.ThumbnailPath))
+                {
+                    var lessonThumbnailPath = Path.Combine(_environment.WebRootPath, lesson.ThumbnailPath.TrimStart('/'));
+                    if (System.IO.File.Exists(lessonThumbnailPath))
+                    {
+                        System.IO.File.Delete(lessonThumbnailPath);
+                    }
+                }
+
+                // Delete lesson video if exists
+                if (!string.IsNullOrEmpty(lesson.VideoPath))
+                {
+                    var videoPath = Path.Combine(_environment.WebRootPath, lesson.VideoPath.TrimStart('/'));
+                    if (System.IO.File.Exists(videoPath))
+                    {
+                        System.IO.File.Delete(videoPath);
+                    }
+                }
+
+                // Delete the lesson from database
+                await _lessonService.DeleteLessonAsync(lesson.Id);
+            }
+
+            // Delete module thumbnail if exists
             if (!string.IsNullOrEmpty(module.ThumbnailPath))
             {
                 var thumbnailPath = Path.Combine(_environment.WebRootPath, module.ThumbnailPath.TrimStart('/'));

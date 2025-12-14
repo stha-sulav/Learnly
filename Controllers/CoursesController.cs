@@ -3,6 +3,7 @@ using Learnly.Models;
 using Learnly.Services;
 using Learnly.ViewModels;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -20,13 +21,25 @@ namespace Learnly.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly ICourseService _courseService;
+        private readonly IModuleService _moduleService;
+        private readonly ILessonService _lessonService;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IWebHostEnvironment _environment;
 
-        public CoursesController(ApplicationDbContext context, ICourseService courseService, UserManager<ApplicationUser> userManager)
+        public CoursesController(
+            ApplicationDbContext context,
+            ICourseService courseService,
+            IModuleService moduleService,
+            ILessonService lessonService,
+            UserManager<ApplicationUser> userManager,
+            IWebHostEnvironment environment)
         {
             _context = context;
             _courseService = courseService;
+            _moduleService = moduleService;
+            _lessonService = lessonService;
             _userManager = userManager;
+            _environment = environment;
         }
 
         // GET: api/Courses
@@ -262,6 +275,62 @@ namespace Learnly.Controllers
             if (course.InstructorId != userId)
             {
                 return Forbid("You are not authorized to delete this course.");
+            }
+
+            // First, delete all modules and their lessons (with files)
+            var modules = await _moduleService.GetModulesByCourseAsync(id);
+            foreach (var module in modules)
+            {
+                // Delete all lessons in this module
+                var lessons = await _lessonService.GetLessonsByModuleAsync(module.Id);
+                foreach (var lesson in lessons)
+                {
+                    // Delete lesson thumbnail if exists
+                    if (!string.IsNullOrEmpty(lesson.ThumbnailPath))
+                    {
+                        var lessonThumbnailPath = Path.Combine(_environment.WebRootPath, lesson.ThumbnailPath.TrimStart('/'));
+                        if (System.IO.File.Exists(lessonThumbnailPath))
+                        {
+                            System.IO.File.Delete(lessonThumbnailPath);
+                        }
+                    }
+
+                    // Delete lesson video if exists
+                    if (!string.IsNullOrEmpty(lesson.VideoPath))
+                    {
+                        var videoPath = Path.Combine(_environment.WebRootPath, lesson.VideoPath.TrimStart('/'));
+                        if (System.IO.File.Exists(videoPath))
+                        {
+                            System.IO.File.Delete(videoPath);
+                        }
+                    }
+
+                    // Delete the lesson from database
+                    await _lessonService.DeleteLessonAsync(lesson.Id);
+                }
+
+                // Delete module thumbnail if exists
+                if (!string.IsNullOrEmpty(module.ThumbnailPath))
+                {
+                    var moduleThumbnailPath = Path.Combine(_environment.WebRootPath, module.ThumbnailPath.TrimStart('/'));
+                    if (System.IO.File.Exists(moduleThumbnailPath))
+                    {
+                        System.IO.File.Delete(moduleThumbnailPath);
+                    }
+                }
+
+                // Delete the module from database
+                await _moduleService.DeleteModuleAsync(module.Id);
+            }
+
+            // Delete course thumbnail if exists
+            if (!string.IsNullOrEmpty(course.ThumbnailPath))
+            {
+                var courseThumbnailPath = Path.Combine(_environment.WebRootPath, course.ThumbnailPath.TrimStart('/'));
+                if (System.IO.File.Exists(courseThumbnailPath))
+                {
+                    System.IO.File.Delete(courseThumbnailPath);
+                }
             }
 
             _context.Courses.Remove(course);

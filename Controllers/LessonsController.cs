@@ -50,6 +50,8 @@ namespace Learnly.Controllers
 
         [HttpPost("{lessonId}/upload-video")]
         [Authorize(Roles = "Instructor,Admin")]
+        [DisableRequestSizeLimit]
+        [RequestFormLimits(MultipartBodyLengthLimit = 524288000)] // 500MB
         public async Task<IActionResult> UploadVideo(int lessonId, IFormFile file)
         {
             try
@@ -66,10 +68,10 @@ namespace Learnly.Controllers
                 // This could be for invalid file types, sizes, etc.
                 return BadRequest(new { error = ex.Message });
             }
-            catch (System.Exception)
+            catch (System.Exception ex)
             {
-                // Generic catch-all for other errors
-                return StatusCode(500, new { error = "An unexpected error occurred during the upload. Please try again later." });
+                // Generic catch-all for other errors - include message for debugging
+                return StatusCode(500, new { error = $"An unexpected error occurred: {ex.Message}" });
             }
         }
 
