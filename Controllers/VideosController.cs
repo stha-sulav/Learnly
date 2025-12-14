@@ -36,12 +36,7 @@ namespace Learnly.Controllers
             var isEnrolled = await _courseService.IsUserEnrolledAsync(courseId, user.Id);
             if (!isEnrolled)
             {
-                // check if the course is public
-                var course = await _courseService.GetCourseByIdAsync(courseId);
-                if (course.Price > 0) // Not free
-                {
-                    return Forbid();
-                }
+                return Forbid();
             }
 
             var lesson = await _lessonService.GetLessonByIdAsync(lessonId);

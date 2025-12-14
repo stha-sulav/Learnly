@@ -5,6 +5,13 @@
 }
 
 <div class="container mt-4">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Instructor" asp-action="Index"><i class="bi bi-mortarboard me-1"></i>Instructor</a></li>
+            <li class="breadcrumb-item active" aria-current="page"><i class="bi bi-book me-1"></i>My Courses</li>
+        </ol>
+    </nav>
+
     <h1>@ViewData["Title"]</h1>
 
     @if (!Model.Any())

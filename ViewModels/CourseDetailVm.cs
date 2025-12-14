@@ -11,6 +11,7 @@ namespace Learnly.ViewModels
         public int DurationSeconds { get; set; }
         public int Order { get; set; }
         public bool IsCompleted { get; set; }
+        public string? ThumbnailPath { get; set; }
     }
 
     public class CourseDetailVm
@@ -21,7 +22,6 @@ namespace Learnly.ViewModels
         public required string Description { get; set; }
         public required string InstructorName { get; set; }
         public required string ThumbnailPath { get; set; }
-        public decimal Price { get; set; } // Placeholder for pricing
         public bool IsEnrolled { get; set; }
         public List<ModuleVm> Modules { get; set; } = new List<ModuleVm>();
     }

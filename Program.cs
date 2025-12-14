@@ -52,7 +52,11 @@ builder.Services.AddScoped<ILessonService, LessonService>();
 builder.Services.AddHostedService<FileCleanupService>();
 builder.Services.AddSignalR();
 
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    });
 builder.Services.AddRazorPages();
 
 // Add Swagger services

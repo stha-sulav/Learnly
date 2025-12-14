@@ -27,9 +27,6 @@ namespace Learnly.Models
         public int? CategoryId { get; set; }
         public Category? Category { get; set; }
 
-        [Column(TypeName = "decimal(18, 2)")]
-        public decimal Price { get; set; }
-
         public string? ThumbnailPath { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

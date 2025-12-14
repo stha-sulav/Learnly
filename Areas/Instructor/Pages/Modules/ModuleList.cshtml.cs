@@ -68,6 +68,7 @@ namespace Learnly.Areas.Instructor.Pages.Modules
                     Id = m.Id,
                     Title = m.Title,
                     Order = m.OrderIndex,
+                    ThumbnailPath = m.ThumbnailPath,
                     Lessons = new List<LessonVm>()
                 }).ToList();
 

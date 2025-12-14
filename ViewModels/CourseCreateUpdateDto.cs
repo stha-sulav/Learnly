@@ -4,27 +4,20 @@ namespace Learnly.ViewModels
 {
     public class CourseCreateUpdateDto
     {
-        public int Id { get; set; } // Added
+        public int Id { get; set; }
 
         [Required]
         [StringLength(200, MinimumLength = 3)]
-        public string Title { get; set; } = string.Empty; // Initialized
-
-        [Required]
-        [StringLength(200, MinimumLength = 3)]
-        public string Slug { get; set; } = string.Empty; // Initialized
+        public string Title { get; set; } = string.Empty;
 
         [StringLength(1000)]
-        public string Description { get; set; } = string.Empty; // Initialized
+        public string Description { get; set; } = string.Empty;
 
-        public string InstructorId { get; set; } = string.Empty; // Initialized
+        public string InstructorId { get; set; } = string.Empty;
 
-        public int? CategoryId { get; set; } // Made nullable
+        public int? CategoryId { get; set; }
 
-        [DataType(DataType.Currency)]
-        public decimal Price { get; set; }
-
-        public string ThumbnailPath { get; set; } = string.Empty; // Initialized
+        public string? ThumbnailPath { get; set; }
 
         public bool IsPublished { get; set; } = false;
     }

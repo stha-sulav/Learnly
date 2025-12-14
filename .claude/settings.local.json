@@ -7,7 +7,10 @@
       "Bash(dotnet tool install:*)",
       "Bash(timeout 15 dotnet run:*)",
       "Bash(dotnet build:*)",
-      "Bash(dotnet add package:*)"
+      "Bash(dotnet add package:*)",
+      "Bash(dotnet ef migrations:*)",
+      "Bash(findstr:*)",
+      "Bash(Select-String -Pattern \"error CS\")"
     ]
   }
 }

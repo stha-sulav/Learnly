@@ -37,13 +37,61 @@ namespace Learnly.Services
             {
                 Title = moduleDto.Title,
                 OrderIndex = moduleDto.OrderIndex,
-                CourseId = courseId
+                CourseId = courseId,
+                ThumbnailPath = moduleDto.ThumbnailPath
             };
 
             _context.Modules.Add(module);
             await _context.SaveChangesAsync();
 
             return module;
+        }
+
+        public async Task<Module?> GetModuleByIdAsync(int moduleId)
+        {
+            return await _context.Modules.FindAsync(moduleId);
+        }
+
+        public async Task<Module?> UpdateModuleAsync(int moduleId, string title)
+        {
+            var module = await _context.Modules.FindAsync(moduleId);
+            if (module == null)
+            {
+                return null;
+            }
+
+            module.Title = title;
+            await _context.SaveChangesAsync();
+
+            return module;
+        }
+
+        public async Task<Module?> UpdateModuleThumbnailAsync(int moduleId, string thumbnailPath)
+        {
+            var module = await _context.Modules.FindAsync(moduleId);
+            if (module == null)
+            {
+                return null;
+            }
+
+            module.ThumbnailPath = thumbnailPath;
+            await _context.SaveChangesAsync();
+
+            return module;
+        }
+
+        public async Task<bool> DeleteModuleAsync(int moduleId)
+        {
+            var module = await _context.Modules.FindAsync(moduleId);
+            if (module == null)
+            {
+                return false;
+            }
+
+            _context.Modules.Remove(module);
+            await _context.SaveChangesAsync();
+
+            return true;
         }
     }
 }

@@ -116,5 +116,47 @@ namespace Learnly.Services
         {
             return await _context.Lessons.FindAsync(lessonId);
         }
+
+        public async Task<Lesson?> UpdateLessonAsync(int lessonId, string title)
+        {
+            var lesson = await _context.Lessons.FindAsync(lessonId);
+            if (lesson == null)
+            {
+                return null;
+            }
+
+            lesson.Title = title;
+            await _context.SaveChangesAsync();
+
+            return lesson;
+        }
+
+        public async Task<Lesson?> UpdateLessonThumbnailAsync(int lessonId, string thumbnailPath)
+        {
+            var lesson = await _context.Lessons.FindAsync(lessonId);
+            if (lesson == null)
+            {
+                return null;
+            }
+
+            lesson.ThumbnailPath = thumbnailPath;
+            await _context.SaveChangesAsync();
+
+            return lesson;
+        }
+
+        public async Task<bool> DeleteLessonAsync(int lessonId)
+        {
+            var lesson = await _context.Lessons.FindAsync(lessonId);
+            if (lesson == null)
+            {
+                return false;
+            }
+
+            _context.Lessons.Remove(lesson);
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
     }
 }

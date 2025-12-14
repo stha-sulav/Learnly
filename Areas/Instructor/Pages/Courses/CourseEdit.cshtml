@@ -5,16 +5,41 @@
 }
 
 <div class="container mt-4">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <partial name="_HomeBreadcrumb" />
+            <li class="breadcrumb-item"><a asp-area="Instructor" asp-page="/Courses/CourseList"><i class="bi bi-journals me-1"></i>My Courses</a></li>
+            <li class="breadcrumb-item active" aria-current="page"><i class="bi @(Model.IsEditMode ? "bi-pencil-square" : "bi-plus-circle") me-1"></i>@ViewData["Title"]</li>
+        </ol>
+    </nav>
+
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>@ViewData["Title"]</h1>
         <a asp-page="./CourseList" class="btn btn-outline-secondary">Back to Courses</a>
     </div>
 
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-2"></i>@Model.SuccessMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i>@Model.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
     <div class="card shadow-sm">
         <div class="card-body">
-            <form method="post">
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <form method="post" enctype="multipart/form-data">
+                <div asp-validation-summary="All" class="text-danger"></div>
                 <input type="hidden" asp-for="Course.Id" />
+                <input type="hidden" asp-for="Course.ThumbnailPath" />
+                <input type="hidden" asp-for="Course.InstructorId" />
 
                 <div class="mb-3">
                     <label asp-for="Course.Title" class="form-label"></label>
@@ -23,21 +48,9 @@
                 </div>
 
                 <div class="mb-3">
-                    <label asp-for="Course.Slug" class="form-label"></label>
-                    <input asp-for="Course.Slug" class="form-control" />
-                    <span asp-validation-for="Course.Slug" class="text-danger"></span>
-                </div>
-
-                <div class="mb-3">
                     <label asp-for="Course.Description" class="form-label"></label>
                     <textarea asp-for="Course.Description" class="form-control" rows="5"></textarea>
                     <span asp-validation-for="Course.Description" class="text-danger"></span>
-                </div>
-
-                <div class="mb-3">
-                    <label asp-for="Course.Price" class="form-label"></label>
-                    <input asp-for="Course.Price" class="form-control" />
-                    <span asp-validation-for="Course.Price" class="text-danger"></span>
                 </div>
 
                 <div class="mb-3">
@@ -49,9 +62,24 @@
                 </div>
 
                 <div class="mb-3">
-                    <label asp-for="Course.ThumbnailPath" class="form-label"></label>
-                    <input asp-for="Course.ThumbnailPath" class="form-control" />
-                    <span asp-validation-for="Course.ThumbnailPath" class="text-danger"></span>
+                    <label class="form-label">Course Thumbnail</label>
+                    <div class="mb-2">
+                        @if (!string.IsNullOrEmpty(Model.Course.ThumbnailPath))
+                        {
+                            <img src="@Model.Course.ThumbnailPath" alt="Current thumbnail" class="img-thumbnail" style="max-height: 150px;" />
+                            <p class="text-muted small mt-1">Current thumbnail</p>
+                        }
+                        else
+                        {
+                            <div class="bg-secondary rounded d-flex align-items-center justify-content-center img-thumbnail" style="width: 200px; height: 150px;">
+                                <i class="bi bi-play-circle text-white" style="font-size: 3rem;"></i>
+                            </div>
+                            <p class="text-muted small mt-1">Default thumbnail (upload to change)</p>
+                        }
+                    </div>
+                    <input type="file" asp-for="ThumbnailFile" class="form-control" accept="image/*" />
+                    <small class="form-text text-muted">Accepted formats: JPG, PNG, GIF, WebP. Max size: 5MB</small>
+                    <span asp-validation-for="ThumbnailFile" class="text-danger"></span>
                 </div>
 
                 <div class="mb-3 form-check">
@@ -69,21 +97,263 @@
     @if (Model.IsEditMode)
     {
         <div class="card shadow-sm mt-4">
-            <div class="card-header">
-                <h3>Modules & Lessons</h3>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="mb-0"><i class="bi bi-diagram-3 me-2"></i>Course Curriculum</h3>
+                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addModuleModal">
+                    <i class="bi bi-plus-lg me-1"></i>Add Module
+                </button>
             </div>
             <div class="card-body">
-                <div id="modules-container">
-                    <!-- Modules will be loaded here dynamically -->
+                <div id="modules-tree" class="modules-tree">
+                    <!-- Tree view will be loaded here dynamically -->
                 </div>
-                <div class="mt-3">
-                    <input type="text" id="new-module-title" class="form-control d-inline-block" style="width: auto;" placeholder="New Module Title" />
-                    <button id="add-module-btn" class="btn btn-secondary">Add Module</button>
+                <div id="empty-state" class="text-center py-5 text-muted" style="display: none;">
+                    <i class="bi bi-folder2-open display-4"></i>
+                    <p class="mt-3">No modules yet. Click "Add Module" to get started.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Module Modal -->
+        <div class="modal fade" id="addModuleModal" tabindex="-1" aria-labelledby="addModuleModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="addModuleModalLabel"><i class="bi bi-folder-plus me-2"></i>Add New Module</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="new-module-title" class="form-label">Module Title <span class="text-danger">*</span></label>
+                            <input type="text" id="new-module-title" class="form-control" placeholder="e.g., Introduction to the Course" required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Module Thumbnail</label>
+                            <div id="new-module-thumbnail-preview" class="mb-2">
+                                <div class="bg-secondary rounded d-flex align-items-center justify-content-center" style="width: 120px; height: 90px;">
+                                    <i class="bi bi-layers text-white" style="font-size: 2rem;"></i>
+                                </div>
+                                <small class="text-muted">Default thumbnail</small>
+                            </div>
+                            <input type="file" id="new-module-thumbnail" class="form-control" accept="image/*" />
+                            <small class="form-text text-muted">Accepted formats: JPG, PNG, GIF, WebP. Max size: 5MB</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" id="add-module-btn" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Module</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Lesson Modal -->
+        <div class="modal fade" id="addLessonModal" tabindex="-1" aria-labelledby="addLessonModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="addLessonModalLabel"><i class="bi bi-file-earmark-plus me-2"></i>Add New Lesson</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="lesson-module-id" />
+                        <div class="mb-3">
+                            <label for="new-lesson-title" class="form-label">Lesson Title <span class="text-danger">*</span></label>
+                            <input type="text" id="new-lesson-title" class="form-control" placeholder="e.g., Getting Started" required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Lesson Thumbnail</label>
+                            <div id="new-lesson-thumbnail-preview" class="mb-2">
+                                <div class="bg-secondary rounded d-flex align-items-center justify-content-center" style="width: 120px; height: 90px;">
+                                    <i class="bi bi-book text-white" style="font-size: 2rem;"></i>
+                                </div>
+                                <small class="text-muted">Default thumbnail</small>
+                            </div>
+                            <input type="file" id="new-lesson-thumbnail" class="form-control" accept="image/*" />
+                            <small class="form-text text-muted">Accepted formats: JPG, PNG, GIF, WebP. Max size: 5MB</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="lesson-video-upload" class="form-label">Video File</label>
+                            <input type="file" id="lesson-video-upload" class="form-control" accept="video/*" />
+                            <small class="form-text text-muted">Supported formats: MP4. Max size: 500MB</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" id="add-lesson-btn" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Lesson</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Module Modal -->
+        <div class="modal fade" id="editModuleModal" tabindex="-1" aria-labelledby="editModuleModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editModuleModalLabel"><i class="bi bi-pencil me-2"></i>Edit Module</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="edit-module-id" />
+                        <div class="mb-3">
+                            <label for="edit-module-title" class="form-label">Module Title <span class="text-danger">*</span></label>
+                            <input type="text" id="edit-module-title" class="form-control" required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Module Thumbnail</label>
+                            <div id="edit-module-thumbnail-preview" class="mb-2">
+                                <div class="bg-secondary rounded d-flex align-items-center justify-content-center" style="width: 120px; height: 90px;">
+                                    <i class="bi bi-layers text-white" style="font-size: 2rem;"></i>
+                                </div>
+                            </div>
+                            <input type="file" id="edit-module-thumbnail" class="form-control" accept="image/*" />
+                            <small class="form-text text-muted">Accepted formats: JPG, PNG, GIF, WebP. Max size: 5MB</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" id="save-module-btn" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Save Changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Lesson Modal -->
+        <div class="modal fade" id="editLessonModal" tabindex="-1" aria-labelledby="editLessonModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editLessonModalLabel"><i class="bi bi-pencil me-2"></i>Edit Lesson</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="edit-lesson-id" />
+                        <div class="mb-3">
+                            <label for="edit-lesson-title" class="form-label">Lesson Title <span class="text-danger">*</span></label>
+                            <input type="text" id="edit-lesson-title" class="form-control" required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Lesson Thumbnail</label>
+                            <div id="edit-lesson-thumbnail-preview" class="mb-2">
+                                <div class="bg-secondary rounded d-flex align-items-center justify-content-center" style="width: 120px; height: 90px;">
+                                    <i class="bi bi-book text-white" style="font-size: 2rem;"></i>
+                                </div>
+                            </div>
+                            <input type="file" id="edit-lesson-thumbnail" class="form-control" accept="image/*" />
+                            <small class="form-text text-muted">Accepted formats: JPG, PNG, GIF, WebP. Max size: 5MB</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" id="save-lesson-btn" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Save Changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Confirmation Modal -->
+        <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title" id="deleteConfirmModalLabel"><i class="bi bi-exclamation-triangle me-2"></i>Confirm Delete</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p id="delete-confirm-message">Are you sure you want to delete this item?</p>
+                        <p class="text-muted small mb-0"><i class="bi bi-info-circle me-1"></i>This action cannot be undone.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="bi bi-x-lg me-1"></i>Cancel</button>
+                        <button type="button" id="confirm-delete-btn" class="btn btn-danger"><i class="bi bi-trash me-1"></i>Delete</button>
+                    </div>
                 </div>
             </div>
         </div>
     }
 </div>
+
+<style>
+    .modules-tree .module-item {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        overflow: hidden;
+    }
+    .modules-tree .module-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        padding: 1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: background-color 0.2s;
+    }
+    .modules-tree .module-header:hover {
+        background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+    }
+    .modules-tree .module-header .module-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    .modules-tree .module-header .module-toggle {
+        transition: transform 0.3s;
+    }
+    .modules-tree .module-header.collapsed .module-toggle {
+        transform: rotate(-90deg);
+    }
+    .modules-tree .module-body {
+        border-top: 1px solid #dee2e6;
+        padding: 0;
+    }
+    .modules-tree .lessons-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    .modules-tree .lesson-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.75rem 1rem 0.75rem 2.5rem;
+        border-bottom: 1px solid #f0f0f0;
+        transition: background-color 0.2s;
+    }
+    .modules-tree .lesson-item:last-child {
+        border-bottom: none;
+    }
+    .modules-tree .lesson-item:hover {
+        background-color: #f8f9fa;
+    }
+    .modules-tree .lesson-info {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .modules-tree .lesson-actions {
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+    .modules-tree .lesson-item:hover .lesson-actions {
+        opacity: 1;
+    }
+    .modules-tree .add-lesson-row {
+        padding: 0.75rem 1rem 0.75rem 2.5rem;
+        background-color: #f8f9fa;
+    }
+    .modules-tree .empty-lessons {
+        padding: 1.5rem;
+        text-align: center;
+        color: #6c757d;
+        font-style: italic;
+    }
+    .modules-tree .module-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+</style>
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
@@ -93,184 +363,564 @@
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 const courseId = @Model.Course.Id;
-                const modulesContainer = document.getElementById('modules-container');
-                const addModuleBtn = document.getElementById('add-module-btn');
-                const newModuleTitleInput = document.getElementById('new-module-title');
+                const modulesTree = document.getElementById('modules-tree');
+                const emptyState = document.getElementById('empty-state');
                 const requestVerificationToken = document.querySelector('meta[name="RequestVerificationToken"]').content;
 
+                // Modal elements
+                const addModuleModal = new bootstrap.Modal(document.getElementById('addModuleModal'));
+                const addLessonModal = new bootstrap.Modal(document.getElementById('addLessonModal'));
+                const editModuleModal = new bootstrap.Modal(document.getElementById('editModuleModal'));
+                const editLessonModal = new bootstrap.Modal(document.getElementById('editLessonModal'));
+                const deleteConfirmModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+
+                // Store modules data
+                let modulesData = [];
+
+                // Delete confirmation state
+                let deleteCallback = null;
+
+                // Alert helper function
+                function showAlert(message, type) {
+                    // Remove existing alerts
+                    const existingAlerts = document.querySelectorAll('.alert-dynamic');
+                    existingAlerts.forEach(alert => alert.remove());
+
+                    const alertClass = type === 'error' ? 'alert-danger' :
+                                       type === 'warning' ? 'alert-warning' :
+                                       type === 'info' ? 'alert-info' : 'alert-success';
+                    const iconClass = type === 'error' ? 'bi-exclamation-triangle' :
+                                      type === 'warning' ? 'bi-exclamation-circle' :
+                                      type === 'info' ? 'bi-info-circle' : 'bi-check-circle';
+
+                    const alertHtml = `
+                        <div class="alert ${alertClass} alert-dismissible fade show alert-dynamic" role="alert">
+                            <i class="bi ${iconClass} me-2"></i>${message}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    `;
+
+                    const container = document.querySelector('.card.shadow-sm.mt-4 .card-body') || document.querySelector('.container');
+                    if (container) {
+                        container.insertAdjacentHTML('afterbegin', alertHtml);
+
+                        // Auto-dismiss after 5 seconds
+                        setTimeout(() => {
+                            const alert = container.querySelector('.alert-dynamic');
+                            if (alert) {
+                                alert.classList.remove('show');
+                                setTimeout(() => alert.remove(), 150);
+                            }
+                        }, 5000);
+                    }
+                }
+
+                // Confirmation dialog helper
+                function showDeleteConfirm(message, callback) {
+                    document.getElementById('delete-confirm-message').textContent = message;
+                    deleteCallback = callback;
+                    deleteConfirmModal.show();
+                }
+
+                // Handle confirm delete button click
+                document.getElementById('confirm-delete-btn').addEventListener('click', async function() {
+                    if (deleteCallback) {
+                        await deleteCallback();
+                        deleteCallback = null;
+                    }
+                    deleteConfirmModal.hide();
+                });
+
+                // Load all modules and their lessons
                 async function loadModules() {
-                    showSpinner(modulesContainer);
                     try {
                         const response = await fetch(`/api/Modules/ByCourse/${courseId}`);
                         if (!response.ok) {
-                            showAlert('Failed to load modules.', 'error');
+                            const errorText = await response.text();
+                            console.error('Failed to load modules:', response.status, errorText);
+                            showAlert(`Failed to load modules: ${response.status}`, 'error');
                             return;
                         }
-                        const modules = await response.json();
-                        renderModules(modules);
+                        modulesData = await response.json();
+
+                        // Load lessons for each module
+                        for (const module of modulesData) {
+                            const lessonsResponse = await fetch(`/api/Lessons/ByModule/${module.id}`);
+                            if (lessonsResponse.ok) {
+                                module.lessons = await lessonsResponse.json();
+                            } else {
+                                module.lessons = [];
+                            }
+                        }
+
+                        renderTree();
                     } catch (error) {
                         showAlert('An error occurred while loading modules.', 'error');
-                    } finally {
-                        hideSpinner(modulesContainer);
                     }
                 }
 
-                function renderModules(modules) {
-                    modulesContainer.innerHTML = '';
-                    modules.forEach(module => {
-                        const moduleEl = document.createElement('div');
-                        moduleEl.className = 'module-item card mb-3';
-                        moduleEl.innerHTML = `
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <h5>${module.title}</h5>
-                            </div>
-                            <div class="card-body">
-                                <ul class="list-group list-group-flush" id="lessons-for-module-${module.id}">
-                                    <!-- Lessons will be loaded here -->
-                                </ul>
-                                <div class="mt-3">
-                                    <input type="text" id="new-lesson-title-${module.id}" class="form-control d-inline-block" style="width: auto;" placeholder="New Lesson Title" />
-                                    <input type="file" id="lesson-video-upload-${module.id}" class="form-control d-inline-block" style="width: auto;" accept="video/*" />
-                                    <button class="btn btn-sm btn-success add-lesson-btn" data-module-id="${module.id}">Add Lesson</button>
-                                </div>
-                            </div>
-                        `;
-                        modulesContainer.appendChild(moduleEl);
-                        loadLessons(module.id);
-                    });
-                }
+                function renderTree() {
+                    modulesTree.innerHTML = '';
 
-                async function loadLessons(moduleId) {
-                    const lessonsContainer = document.getElementById(`lessons-for-module-${moduleId}`);
-                    showSpinner(lessonsContainer);
-                    try {
-                        const response = await fetch(`/api/Lessons/ByModule/${moduleId}`);
-                        if (!response.ok) {
-                            showAlert(`Failed to load lessons for module ${moduleId}.`, 'error');
-                            return;
-                        }
-                        const lessons = await response.json();
-                        renderLessons(moduleId, lessons);
-                    } catch (error) {
-                        showAlert(`An error occurred while loading lessons for module ${moduleId}.`, 'error');
-                    } finally {
-                        hideSpinner(lessonsContainer);
-                    }
-                }
-
-                function renderLessons(moduleId, lessons) {
-                    const lessonsContainer = document.getElementById(`lessons-for-module-${moduleId}`);
-                    lessonsContainer.innerHTML = '';
-                    if (lessons.length === 0) {
-                        lessonsContainer.innerHTML = '<li class="list-group-item">No lessons yet.</li>';
+                    if (modulesData.length === 0) {
+                        emptyState.style.display = 'block';
                         return;
                     }
-                    lessons.forEach(lesson => {
-                        const lessonEl = document.createElement('li');
-                        lessonEl.className = 'list-group-item d-flex justify-content-between align-items-center';
-                        lessonEl.innerHTML = `
-                            <span>${lesson.title}</span>
-                            ${lesson.contentPath ? `<a href="${lesson.contentPath}" target="_blank" class="btn btn-sm btn-info">View Video</a>` : ''}
+
+                    emptyState.style.display = 'none';
+
+                    modulesData.forEach((module, index) => {
+                        const moduleEl = document.createElement('div');
+                        moduleEl.className = 'module-item';
+                        moduleEl.dataset.moduleId = module.id;
+
+                        const lessonCount = module.lessons ? module.lessons.length : 0;
+                        const thumbnailHtml = module.thumbnailPath
+                            ? `<img src="${module.thumbnailPath}" alt="${module.title}" class="module-thumbnail rounded" style="width: 40px; height: 30px; object-fit: cover;">`
+                            : `<div class="module-thumbnail-default bg-secondary rounded d-flex align-items-center justify-content-center" style="width: 40px; height: 30px;"><i class="bi bi-layers text-white"></i></div>`;
+
+                        moduleEl.innerHTML = `
+                            <div class="module-header" data-module-id="${module.id}">
+                                <div class="module-info">
+                                    <i class="bi bi-chevron-down module-toggle"></i>
+                                    ${thumbnailHtml}
+                                    <strong>${module.title}</strong>
+                                    <span class="badge bg-secondary module-badge">${lessonCount} lesson${lessonCount !== 1 ? 's' : ''}</span>
+                                </div>
+                                <div class="module-actions">
+                                    <button class="btn btn-sm btn-outline-success me-1 add-lesson-trigger" data-module-id="${module.id}" title="Add Lesson">
+                                        <i class="bi bi-plus-lg"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-primary me-1 edit-module-trigger" data-module-id="${module.id}" data-module-title="${module.title}" data-module-thumbnail="${module.thumbnailPath || ''}" title="Edit Module">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger delete-module-trigger" data-module-id="${module.id}" title="Delete Module">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="module-body" id="module-body-${module.id}">
+                                ${renderLessons(module)}
+                            </div>
                         `;
-                        lessonsContainer.appendChild(lessonEl);
+
+                        modulesTree.appendChild(moduleEl);
+                    });
+
+                    // Add toggle functionality
+                    document.querySelectorAll('.module-header').forEach(header => {
+                        header.addEventListener('click', function(e) {
+                            // Don't toggle if clicking on action buttons
+                            if (e.target.closest('.module-actions')) return;
+
+                            const moduleId = this.dataset.moduleId;
+                            const body = document.getElementById(`module-body-${moduleId}`);
+                            const isCollapsed = this.classList.toggle('collapsed');
+                            body.style.display = isCollapsed ? 'none' : 'block';
+                        });
                     });
                 }
 
-                addModuleBtn.addEventListener('click', async function () {
-                    const title = newModuleTitleInput.value;
+                function renderLessons(module) {
+                    if (!module.lessons || module.lessons.length === 0) {
+                        return `<div class="empty-lessons"><i class="bi bi-file-earmark me-2"></i>No lessons yet. Click + to add one.</div>`;
+                    }
+
+                    let html = '<ul class="lessons-list">';
+                    module.lessons.forEach((lesson, index) => {
+                        const hasVideo = lesson.contentPath || lesson.videoPath;
+                        const thumbnailHtml = lesson.thumbnailPath
+                            ? `<img src="${lesson.thumbnailPath}" alt="${lesson.title}" class="lesson-thumbnail rounded" style="width: 32px; height: 24px; object-fit: cover;">`
+                            : `<div class="lesson-thumbnail-default bg-secondary rounded d-flex align-items-center justify-content-center" style="width: 32px; height: 24px;"><i class="bi bi-book text-white" style="font-size: 0.75rem;"></i></div>`;
+                        html += `
+                            <li class="lesson-item" data-lesson-id="${lesson.id}">
+                                <div class="lesson-info">
+                                    ${thumbnailHtml}
+                                    <span>${lesson.title}</span>
+                                    ${hasVideo ? '<span class="badge bg-info ms-2">Video</span>' : ''}
+                                </div>
+                                <div class="lesson-actions">
+                                    ${hasVideo ? `<a href="${lesson.contentPath || lesson.videoPath}" target="_blank" class="btn btn-sm btn-outline-info me-1" title="Preview"><i class="bi bi-eye"></i></a>` : ''}
+                                    <button class="btn btn-sm btn-outline-primary me-1 edit-lesson-trigger" data-lesson-id="${lesson.id}" data-lesson-title="${lesson.title}" data-lesson-thumbnail="${lesson.thumbnailPath || ''}" title="Edit Lesson">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger delete-lesson-trigger" data-lesson-id="${lesson.id}" data-module-id="${module.id}" title="Delete Lesson">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </li>
+                        `;
+                    });
+                    html += '</ul>';
+                    return html;
+                }
+
+                // Add Module
+                document.getElementById('add-module-btn').addEventListener('click', async function() {
+                    const titleInput = document.getElementById('new-module-title');
+                    const thumbnailInput = document.getElementById('new-module-thumbnail');
+                    const title = titleInput.value.trim();
+                    const thumbnailFile = thumbnailInput.files[0];
+
                     if (!title) {
                         showAlert('Please enter a module title.', 'warning');
                         return;
                     }
 
-                    showSpinner(addModuleBtn);
                     try {
+                        // Create module
                         const response = await fetch(`/api/Modules/ByCourse/${courseId}`, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': requestVerificationToken },
-                            body: JSON.stringify({ title: title, orderIndex: modulesContainer.children.length + 1 })
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'RequestVerificationToken': requestVerificationToken
+                            },
+                            body: JSON.stringify({ title: title, orderIndex: modulesData.length + 1 })
                         });
 
-                        if (response.ok) {
-                            newModuleTitleInput.value = '';
-                            loadModules();
-                            showAlert('Module added successfully.', 'success');
-                        } else {
+                        if (!response.ok) {
                             showAlert('Failed to add module.', 'error');
-                        }
-                    } catch (error) {
-                        showAlert('An error occurred while adding the module.', 'error');
-                    } finally {
-                        hideSpinner(addModuleBtn);
-                    }
-                });
-
-                modulesContainer.addEventListener('click', function (e) {
-                    if (e.target.classList.contains('add-lesson-btn')) {
-                        const moduleId = e.target.dataset.moduleId;
-                        const lessonTitleInput = document.getElementById(`new-lesson-title-${moduleId}`);
-                        const videoFileInput = document.getElementById(`lesson-video-upload-${moduleId}`);
-                        const title = lessonTitleInput.value;
-                        const file = videoFileInput.files[0];
-
-                        if (!title) {
-                            showAlert('Please enter a lesson title.', 'warning');
                             return;
                         }
 
-                        addLesson(moduleId, title, file);
-                    }
-                });
+                        const module = await response.json();
 
-                async function addLesson(moduleId, title, file) {
-                    const addLessonBtn = document.querySelector(`.add-lesson-btn[data-module-id="${moduleId}"]`);
-                    showSpinner(addLessonBtn);
-
-                    try {
-                        // 1. Create the lesson
-                        const lessonResponse = await fetch(`/api/Lessons/ByModule/${moduleId}`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': requestVerificationToken },
-                            body: JSON.stringify({ title: title, contentType: 0, durationSeconds: 0, order: 0 }) // Assuming ContentType.Video = 0
-                        });
-
-                        if (!lessonResponse.ok) {
-                            showAlert('Failed to create lesson.', 'error');
-                            hideSpinner(addLessonBtn);
-                            return;
-                        }
-
-                        const lesson = await lessonResponse.json();
-                        showAlert('Lesson created. Uploading video...', 'info');
-
-                        // 2. Upload the video if a file is provided
-                        if (file) {
+                        // Upload thumbnail if provided
+                        if (thumbnailFile) {
                             const formData = new FormData();
-                            formData.append('file', file);
+                            formData.append('thumbnail', thumbnailFile);
 
-                            const uploadResponse = await fetch(`/api/Lessons/${lesson.id}/upload-video`, {
+                            const thumbnailResponse = await fetch(`/api/Modules/${module.id}/Thumbnail`, {
                                 method: 'POST',
                                 headers: { 'RequestVerificationToken': requestVerificationToken },
                                 body: formData
                             });
 
-                            if (uploadResponse.ok) {
-                                showAlert('Video uploaded successfully!', 'success');
-                            } else {
-                                const errorData = await uploadResponse.json();
-                                showAlert(`Video upload failed: ${errorData.error}`, 'error');
+                            if (!thumbnailResponse.ok) {
+                                showAlert('Module added but thumbnail upload failed.', 'warning');
                             }
                         }
 
-                        // 3. Refresh lessons for the module
-                        loadLessons(moduleId);
+                        // Reset form
+                        titleInput.value = '';
+                        thumbnailInput.value = '';
+                        addModuleModal.hide();
+                        showAlert('Module added successfully.', 'success');
+                        loadModules();
+                    } catch (error) {
+                        showAlert('An error occurred while adding the module.', 'error');
+                    }
+                });
+
+                // Add Lesson trigger
+                modulesTree.addEventListener('click', function(e) {
+                    const addLessonBtn = e.target.closest('.add-lesson-trigger');
+                    if (addLessonBtn) {
+                        e.stopPropagation();
+                        const moduleId = addLessonBtn.dataset.moduleId;
+                        document.getElementById('lesson-module-id').value = moduleId;
+                        document.getElementById('new-lesson-title').value = '';
+                        document.getElementById('new-lesson-thumbnail').value = '';
+                        document.getElementById('lesson-video-upload').value = '';
+                        addLessonModal.show();
+                    }
+                });
+
+                // Add Lesson
+                document.getElementById('add-lesson-btn').addEventListener('click', async function() {
+                    const moduleId = document.getElementById('lesson-module-id').value;
+                    const title = document.getElementById('new-lesson-title').value.trim();
+                    const thumbnailInput = document.getElementById('new-lesson-thumbnail');
+                    const thumbnailFile = thumbnailInput.files[0];
+                    const videoInput = document.getElementById('lesson-video-upload');
+                    const videoFile = videoInput.files[0];
+
+                    if (!title) {
+                        showAlert('Please enter a lesson title.', 'warning');
+                        return;
+                    }
+
+                    // Calculate the next order index
+                    const module = modulesData.find(m => m.id == moduleId);
+                    const lessonCount = module && module.lessons ? module.lessons.length : 0;
+                    const orderIndex = lessonCount + 1;
+
+                    try {
+                        // Create lesson
+                        const lessonResponse = await fetch(`/api/Lessons/ByModule/${moduleId}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'RequestVerificationToken': requestVerificationToken
+                            },
+                            body: JSON.stringify({ title: title, contentType: 0, durationSeconds: 0, orderIndex: orderIndex })
+                        });
+
+                        if (!lessonResponse.ok) {
+                            const errorText = await lessonResponse.text();
+                            console.error('Failed to create lesson:', lessonResponse.status, errorText);
+                            showAlert(`Failed to create lesson: ${lessonResponse.status}`, 'error');
+                            return;
+                        }
+
+                        const lesson = await lessonResponse.json();
+
+                        // Upload thumbnail if provided
+                        if (thumbnailFile) {
+                            const thumbnailFormData = new FormData();
+                            thumbnailFormData.append('thumbnail', thumbnailFile);
+
+                            const thumbnailResponse = await fetch(`/api/Lessons/${lesson.id}/Thumbnail`, {
+                                method: 'POST',
+                                headers: { 'RequestVerificationToken': requestVerificationToken },
+                                body: thumbnailFormData
+                            });
+
+                            if (!thumbnailResponse.ok) {
+                                showAlert('Lesson created but thumbnail upload failed.', 'warning');
+                            }
+                        }
+
+                        // Upload video if provided
+                        if (videoFile) {
+                            showAlert('Lesson created. Uploading video...', 'info');
+                            const videoFormData = new FormData();
+                            videoFormData.append('file', videoFile);
+
+                            const uploadResponse = await fetch(`/api/Lessons/${lesson.id}/upload-video`, {
+                                method: 'POST',
+                                headers: { 'RequestVerificationToken': requestVerificationToken },
+                                body: videoFormData
+                            });
+
+                            if (uploadResponse.ok) {
+                                showAlert('Lesson added successfully!', 'success');
+                            } else {
+                                showAlert('Lesson created but video upload failed.', 'warning');
+                            }
+                        } else {
+                            showAlert('Lesson added successfully.', 'success');
+                        }
+
+                        addLessonModal.hide();
+                        loadModules();
 
                     } catch (error) {
                         showAlert('An error occurred while adding the lesson.', 'error');
-                    } finally {
-                        hideSpinner(addLessonBtn);
                     }
-                }
+                });
+
+                // Edit Module trigger
+                modulesTree.addEventListener('click', function(e) {
+                    const editBtn = e.target.closest('.edit-module-trigger');
+                    if (editBtn) {
+                        e.stopPropagation();
+                        const moduleId = editBtn.dataset.moduleId;
+                        const moduleTitle = editBtn.dataset.moduleTitle;
+                        const moduleThumbnail = editBtn.dataset.moduleThumbnail;
+                        document.getElementById('edit-module-id').value = moduleId;
+                        document.getElementById('edit-module-title').value = moduleTitle;
+                        document.getElementById('edit-module-thumbnail').value = '';
+
+                        // Update thumbnail preview
+                        const previewContainer = document.getElementById('edit-module-thumbnail-preview');
+                        if (moduleThumbnail) {
+                            previewContainer.innerHTML = `<img src="${moduleThumbnail}" alt="Module thumbnail" class="img-thumbnail" style="max-height: 90px;">`;
+                        } else {
+                            previewContainer.innerHTML = `<div class="bg-secondary rounded d-flex align-items-center justify-content-center" style="width: 120px; height: 90px;"><i class="bi bi-layers text-white" style="font-size: 2rem;"></i></div>`;
+                        }
+
+                        editModuleModal.show();
+                    }
+                });
+
+                // Save Module Edit
+                document.getElementById('save-module-btn').addEventListener('click', async function() {
+                    const moduleId = document.getElementById('edit-module-id').value;
+                    const title = document.getElementById('edit-module-title').value.trim();
+                    const thumbnailInput = document.getElementById('edit-module-thumbnail');
+                    const thumbnailFile = thumbnailInput.files[0];
+
+                    if (!title) {
+                        showAlert('Please enter a module title.', 'warning');
+                        return;
+                    }
+
+                    try {
+                        // Update module title
+                        const response = await fetch(`/api/Modules/${moduleId}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'RequestVerificationToken': requestVerificationToken
+                            },
+                            body: JSON.stringify({ title: title })
+                        });
+
+                        if (!response.ok) {
+                            showAlert('Failed to update module.', 'error');
+                            return;
+                        }
+
+                        // Upload thumbnail if provided
+                        if (thumbnailFile) {
+                            const formData = new FormData();
+                            formData.append('thumbnail', thumbnailFile);
+
+                            const thumbnailResponse = await fetch(`/api/Modules/${moduleId}/Thumbnail`, {
+                                method: 'POST',
+                                headers: { 'RequestVerificationToken': requestVerificationToken },
+                                body: formData
+                            });
+
+                            if (!thumbnailResponse.ok) {
+                                showAlert('Module updated but thumbnail upload failed.', 'warning');
+                                editModuleModal.hide();
+                                loadModules();
+                                return;
+                            }
+                        }
+
+                        editModuleModal.hide();
+                        showAlert('Module updated successfully.', 'success');
+                        loadModules();
+                    } catch (error) {
+                        showAlert('An error occurred while updating the module.', 'error');
+                    }
+                });
+
+                // Delete Module
+                modulesTree.addEventListener('click', function(e) {
+                    const deleteBtn = e.target.closest('.delete-module-trigger');
+                    if (deleteBtn) {
+                        e.stopPropagation();
+                        const moduleId = deleteBtn.dataset.moduleId;
+
+                        showDeleteConfirm('Are you sure you want to delete this module and all its lessons?', async () => {
+                            try {
+                                const response = await fetch(`/api/Modules/${moduleId}`, {
+                                    method: 'DELETE',
+                                    headers: { 'RequestVerificationToken': requestVerificationToken }
+                                });
+
+                                if (response.ok) {
+                                    showAlert('Module deleted successfully.', 'success');
+                                    loadModules();
+                                } else {
+                                    showAlert('Failed to delete module.', 'error');
+                                }
+                            } catch (error) {
+                                showAlert('An error occurred while deleting the module.', 'error');
+                            }
+                        });
+                    }
+                });
+
+                // Delete Lesson
+                modulesTree.addEventListener('click', function(e) {
+                    const deleteBtn = e.target.closest('.delete-lesson-trigger');
+                    if (deleteBtn) {
+                        e.stopPropagation();
+                        const lessonId = deleteBtn.dataset.lessonId;
+
+                        showDeleteConfirm('Are you sure you want to delete this lesson?', async () => {
+                            try {
+                                const response = await fetch(`/api/Lessons/${lessonId}`, {
+                                    method: 'DELETE',
+                                    headers: { 'RequestVerificationToken': requestVerificationToken }
+                                });
+
+                                if (response.ok) {
+                                    showAlert('Lesson deleted successfully.', 'success');
+                                    loadModules();
+                                } else {
+                                    showAlert('Failed to delete lesson.', 'error');
+                                }
+                            } catch (error) {
+                                showAlert('An error occurred while deleting the lesson.', 'error');
+                            }
+                        });
+                    }
+                });
+
+                // Edit Lesson trigger
+                modulesTree.addEventListener('click', function(e) {
+                    const editBtn = e.target.closest('.edit-lesson-trigger');
+                    if (editBtn) {
+                        e.stopPropagation();
+                        const lessonId = editBtn.dataset.lessonId;
+                        const lessonTitle = editBtn.dataset.lessonTitle;
+                        const lessonThumbnail = editBtn.dataset.lessonThumbnail;
+                        document.getElementById('edit-lesson-id').value = lessonId;
+                        document.getElementById('edit-lesson-title').value = lessonTitle;
+                        document.getElementById('edit-lesson-thumbnail').value = '';
+
+                        // Update thumbnail preview
+                        const previewContainer = document.getElementById('edit-lesson-thumbnail-preview');
+                        if (lessonThumbnail) {
+                            previewContainer.innerHTML = `<img src="${lessonThumbnail}" alt="Lesson thumbnail" class="img-thumbnail" style="max-height: 90px;">`;
+                        } else {
+                            previewContainer.innerHTML = `<div class="bg-secondary rounded d-flex align-items-center justify-content-center" style="width: 120px; height: 90px;"><i class="bi bi-book text-white" style="font-size: 2rem;"></i></div>`;
+                        }
+
+                        editLessonModal.show();
+                    }
+                });
+
+                // Save Lesson Edit
+                document.getElementById('save-lesson-btn').addEventListener('click', async function() {
+                    const lessonId = document.getElementById('edit-lesson-id').value;
+                    const title = document.getElementById('edit-lesson-title').value.trim();
+                    const thumbnailInput = document.getElementById('edit-lesson-thumbnail');
+                    const thumbnailFile = thumbnailInput.files[0];
+
+                    if (!title) {
+                        showAlert('Please enter a lesson title.', 'warning');
+                        return;
+                    }
+
+                    try {
+                        // Update lesson title
+                        const response = await fetch(`/api/Lessons/${lessonId}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'RequestVerificationToken': requestVerificationToken
+                            },
+                            body: JSON.stringify({ title: title })
+                        });
+
+                        if (!response.ok) {
+                            showAlert('Failed to update lesson.', 'error');
+                            return;
+                        }
+
+                        // Upload thumbnail if provided
+                        if (thumbnailFile) {
+                            const formData = new FormData();
+                            formData.append('thumbnail', thumbnailFile);
+
+                            const thumbnailResponse = await fetch(`/api/Lessons/${lessonId}/Thumbnail`, {
+                                method: 'POST',
+                                headers: { 'RequestVerificationToken': requestVerificationToken },
+                                body: formData
+                            });
+
+                            if (!thumbnailResponse.ok) {
+                                showAlert('Lesson updated but thumbnail upload failed.', 'warning');
+                                editLessonModal.hide();
+                                loadModules();
+                                return;
+                            }
+                        }
+
+                        editLessonModal.hide();
+                        showAlert('Lesson updated successfully.', 'success');
+                        loadModules();
+                    } catch (error) {
+                        showAlert('An error occurred while updating the lesson.', 'error');
+                    }
+                });
 
                 // Initial load
                 loadModules();

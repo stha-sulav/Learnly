@@ -6,9 +6,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Learnly.Constants; // For Roles
+using Learnly.Constants;
 
 namespace Learnly.Controllers
 {
@@ -50,6 +52,32 @@ namespace Learnly.Controllers
             return Ok(course);
         }
 
+        // GET: api/Courses/edit/5
+        [HttpGet("edit/{id:int}")]
+        [Authorize(Roles = Roles.Instructor)]
+        public async Task<ActionResult<CourseCreateUpdateDto>> GetCourseForEdit(int id)
+        {
+            var userId = _userManager.GetUserId(User);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
+
+            var course = await _courseService.GetCourseForEditAsync(id);
+            if (course == null)
+            {
+                return NotFound();
+            }
+
+            // Only the instructor who created the course can edit it
+            if (course.InstructorId != userId)
+            {
+                return Forbid("You are not authorized to edit this course.");
+            }
+
+            return Ok(course);
+        }
+
         // POST: api/Courses
         [HttpPost]
         [Authorize(Roles = Roles.Instructor)]
@@ -67,21 +95,25 @@ namespace Learnly.Controllers
                 return Forbid("Instructor ID in request body does not match authenticated user.");
             }
 
-            // Check if slug already exists
-            if (await _context.Courses.AnyAsync(c => c.Slug == courseDto.Slug))
+            // Auto-generate slug from title
+            var slug = GenerateSlug(courseDto.Title);
+
+            // Ensure slug uniqueness by appending a number if needed
+            var baseSlug = slug;
+            var counter = 1;
+            while (await _context.Courses.AnyAsync(c => c.Slug == slug))
             {
-                ModelState.AddModelError("Slug", "A course with this slug already exists.");
-                return Conflict(ModelState);
+                slug = $"{baseSlug}-{counter}";
+                counter++;
             }
 
             var course = new Course
             {
                 Title = courseDto.Title,
-                Slug = courseDto.Slug,
+                Slug = slug,
                 Description = courseDto.Description,
                 InstructorId = courseDto.InstructorId,
                 CategoryId = courseDto.CategoryId,
-                Price = courseDto.Price,
                 ThumbnailPath = courseDto.ThumbnailPath,
                 CreatedAt = DateTime.UtcNow,
                 IsPublished = courseDto.IsPublished
@@ -101,7 +133,6 @@ namespace Learnly.Controllers
                 Description = course.Description ?? string.Empty,
                 InstructorName = instructor?.DisplayName ?? "Unknown Instructor",
                 ThumbnailPath = course.ThumbnailPath ?? string.Empty,
-                Price = course.Price,
                 IsEnrolled = false, // Default for creation, will be set dynamically
                 Modules = new List<ModuleVm>()
             };
@@ -183,19 +214,11 @@ namespace Learnly.Controllers
             {
                 return Forbid("You are not authorized to update this course.");
             }
-            
-            // Check for slug uniqueness if it's being changed
-            if (course.Slug != courseDto.Slug && await _context.Courses.AnyAsync(c => c.Slug == courseDto.Slug && c.Id != id))
-            {
-                ModelState.AddModelError("Slug", "A course with this slug already exists.");
-                return Conflict(ModelState);
-            }
 
+            // Keep existing slug - don't change URLs after course is created
             course.Title = courseDto.Title;
-            course.Slug = courseDto.Slug;
             course.Description = courseDto.Description;
             course.CategoryId = courseDto.CategoryId;
-            course.Price = courseDto.Price;
             course.ThumbnailPath = courseDto.ThumbnailPath;
             course.IsPublished = courseDto.IsPublished;
 
@@ -247,9 +270,97 @@ namespace Learnly.Controllers
             return NoContent();
         }
 
+        // POST: api/Courses/5/Thumbnail
+        [HttpPost("{id}/Thumbnail")]
+        [Authorize(Roles = Roles.Instructor)]
+        public async Task<IActionResult> UploadThumbnail(int id, IFormFile thumbnail)
+        {
+            var userId = _userManager.GetUserId(User);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
+
+            var course = await _context.Courses.FindAsync(id);
+            if (course == null)
+            {
+                return NotFound();
+            }
+
+            if (course.InstructorId != userId)
+            {
+                return Forbid("You are not authorized to update this course.");
+            }
+
+            if (thumbnail == null || thumbnail.Length == 0)
+            {
+                return BadRequest("No file uploaded");
+            }
+
+            // Validate file type
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+            var extension = Path.GetExtension(thumbnail.FileName).ToLowerInvariant();
+            if (!allowedExtensions.Contains(extension))
+            {
+                return BadRequest("Invalid image format. Allowed formats: JPG, PNG, GIF, WebP");
+            }
+
+            // Validate file size (max 5MB)
+            if (thumbnail.Length > 5 * 1024 * 1024)
+            {
+                return BadRequest("Image file size must be less than 5MB.");
+            }
+
+            // Create uploads directory if needed
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "thumbnails");
+            if (!Directory.Exists(uploadsFolder))
+            {
+                Directory.CreateDirectory(uploadsFolder);
+            }
+
+            // Generate unique filename
+            var uniqueFileName = $"{Guid.NewGuid()}{extension}";
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            // Save file
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await thumbnail.CopyToAsync(fileStream);
+            }
+
+            // Update course thumbnail path
+            course.ThumbnailPath = $"/uploads/thumbnails/{uniqueFileName}";
+            await _context.SaveChangesAsync();
+
+            return Ok(new { thumbnailPath = course.ThumbnailPath });
+        }
+
         private bool CourseExists(int id)
         {
             return _context.Courses.Any(e => e.Id == id);
+        }
+
+        private static string GenerateSlug(string title)
+        {
+            if (string.IsNullOrWhiteSpace(title))
+                return string.Empty;
+
+            // Convert to lowercase, remove special characters, replace spaces with hyphens
+            var slug = title.ToLowerInvariant().Trim();
+
+            // Remove special characters (keep only letters, numbers, spaces, and hyphens)
+            slug = System.Text.RegularExpressions.Regex.Replace(slug, @"[^\w\s-]", "");
+
+            // Replace spaces with hyphens
+            slug = System.Text.RegularExpressions.Regex.Replace(slug, @"\s+", "-");
+
+            // Replace multiple hyphens with single hyphen
+            slug = System.Text.RegularExpressions.Regex.Replace(slug, @"-+", "-");
+
+            // Trim hyphens from start and end
+            slug = slug.Trim('-');
+
+            return slug;
         }
     }
 }

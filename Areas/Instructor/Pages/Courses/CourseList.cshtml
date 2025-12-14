@@ -5,31 +5,85 @@
 }
 
 <div class="container mt-4">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <partial name="_HomeBreadcrumb" />
+            <li class="breadcrumb-item active" aria-current="page"><i class="bi bi-journals me-1"></i>My Courses</li>
+        </ol>
+    </nav>
+
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>My Courses</h1>
-        <a asp-area="Instructor" asp-page="/Courses/CourseEdit" class="btn btn-primary">Create New Course</a>
+        <a asp-area="Instructor" asp-page="/Courses/CourseEdit" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i>Create New Course
+        </a>
     </div>
+
+    <!-- Alert Container -->
+    <div id="alertContainer"></div>
 
     @if (Model.Courses == null || !Model.Courses.Any())
     {
         <div class="alert alert-info" role="alert">
-            You haven't created any courses yet.
+            <i class="bi bi-info-circle me-2"></i>You haven't created any courses yet.
+            <a asp-area="Instructor" asp-page="/Courses/CourseEdit" class="alert-link">Create your first course</a>
         </div>
     }
     else
     {
-        <div class="row">
+        <div class="row" id="coursesContainer">
             @foreach (var course in Model.Courses)
             {
-                <div class="col-md-4 mb-4">
-                    <div class="card h-100 shadow-sm">
-                        <img src="@course.ThumbnailPath" class="card-img-top" alt="@course.Title Thumbnail" style="height: 180px; object-fit: cover;">
+                <div class="col-lg-4 col-md-6 mb-4" id="course-card-@course.Id">
+                    <div class="card h-100 shadow-sm border-0 course-card" style="cursor: pointer;" onclick="navigateToCourse(@course.Id, event)">
+                        <div class="position-relative" style="height: 180px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <!-- Default placeholder (always present as background) -->
+                            <div class="d-flex align-items-center justify-content-center position-absolute top-0 start-0 w-100 h-100">
+                                <i class="bi bi-play-circle text-white" style="font-size: 4rem;"></i>
+                            </div>
+                            <!-- Thumbnail image (overlays placeholder if exists) -->
+                            @if (!string.IsNullOrWhiteSpace(course.ThumbnailPath))
+                            {
+                                <img src="@course.ThumbnailPath" class="card-img-top position-absolute top-0 start-0 w-100 h-100" alt="@course.Title" style="object-fit: cover;" onerror="this.style.display='none';">
+                            }
+                            <!-- Status Badge -->
+                            <span class="position-absolute top-0 end-0 m-2 badge @(course.IsPublished ? "bg-success" : "bg-warning text-dark")">
+                                <i class="bi @(course.IsPublished ? "bi-globe" : "bi-pencil") me-1"></i>@(course.IsPublished ? "Published" : "Draft")
+                            </span>
+                        </div>
                         <div class="card-body d-flex flex-column">
-                            <h5 class="card-title">@course.Title</h5>
-                            <p class="card-text text-muted">@course.ShortDescription</p>
-                            <div class="mt-auto">
-                                <a asp-area="Instructor" asp-page="/Courses/CourseEdit" asp-route-id="@course.Id" class="btn btn-secondary btn-sm me-2">Edit</a>
-                                <a asp-area="Instructor" asp-page="/Modules/ModuleList" asp-route-courseId="@course.Id" class="btn btn-info btn-sm">Manage Modules</a>
+                            <h5 class="card-title mb-2">@course.Title</h5>
+
+                            <!-- Category -->
+                            @if (!string.IsNullOrEmpty(course.CategoryName))
+                            {
+                                <span class="badge bg-light text-dark mb-2" style="width: fit-content;">
+                                    <i class="bi bi-folder me-1"></i>@course.CategoryName
+                                </span>
+                            }
+
+                            <p class="card-text text-muted small flex-grow-1">@course.ShortDescription</p>
+
+                            <!-- Stats Row -->
+                            <div class="d-flex justify-content-between text-muted small mb-3 border-top border-bottom py-2">
+                                <span title="Modules"><i class="bi bi-collection me-1"></i>@course.ModuleCount Modules</span>
+                                <span title="Lessons"><i class="bi bi-play-btn me-1"></i>@course.LessonCount Lessons</span>
+                                <span title="Students"><i class="bi bi-people me-1"></i>@course.EnrolledStudents</span>
+                            </div>
+
+                            <!-- Created Date -->
+                            <p class="text-muted small mb-3">
+                                <i class="bi bi-calendar3 me-1"></i>Created @course.CreatedAt.ToString("MMM dd, yyyy")
+                            </p>
+
+                            <!-- Action Buttons -->
+                            <div class="d-flex gap-2 mt-auto" onclick="event.stopPropagation();">
+                                <button type="button" class="btn btn-primary btn-sm w-50" onclick="openEditModal(@course.Id)">
+                                    <i class="bi bi-pencil-square me-1"></i>Edit
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-sm w-50" data-course-id="@course.Id" data-course-title="@course.Title" onclick="openDeleteModal(this.dataset.courseId, this.dataset.courseTitle)">
+                                    <i class="bi bi-trash me-1"></i>Delete
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -38,3 +92,271 @@
         </div>
     }
 </div>
+
+<!-- Edit Course Modal -->
+<div class="modal fade" id="editCourseModal" tabindex="-1" aria-labelledby="editCourseModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editCourseModalLabel"><i class="bi bi-pencil-square me-2"></i>Edit Course</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editCourseForm">
+                    <input type="hidden" id="editCourseId" name="id" />
+
+                    <div class="mb-3">
+                        <label for="editCourseTitle" class="form-label">Title <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="editCourseTitle" name="title" required minlength="3" maxlength="200" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="editCourseDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="editCourseDescription" name="description" rows="4" maxlength="1000"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="editCourseCategory" class="form-label">Category</label>
+                        <select class="form-select" id="editCourseCategory" name="categoryId">
+                            <option value="">-- Select Category --</option>
+                            @foreach (var category in Model.Categories)
+                            {
+                                <option value="@category.Value">@category.Text</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Thumbnail</label>
+                        <div id="currentThumbnailContainer" class="mb-2" style="display: none;">
+                            <img id="currentThumbnail" src="" alt="Current thumbnail" class="img-thumbnail" style="max-height: 100px;" />
+                            <p class="text-muted small mt-1">Current thumbnail</p>
+                        </div>
+                        <input type="file" class="form-control" id="editCourseThumbnail" accept="image/*" />
+                        <small class="form-text text-muted">Leave empty to keep current thumbnail</small>
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="editCourseIsPublished" name="isPublished" />
+                        <label class="form-check-label" for="editCourseIsPublished">Published</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveCourse()">
+                    <i class="bi bi-check-lg me-1"></i>Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteCourseModal" tabindex="-1" aria-labelledby="deleteCourseModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteCourseModalLabel"><i class="bi bi-exclamation-triangle me-2"></i>Delete Course</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="deleteCourseId" />
+                <p>Are you sure you want to delete the course:</p>
+                <p class="fw-bold fs-5" id="deleteCourseTitle"></p>
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>Warning:</strong> This action cannot be undone. All modules, lessons, and student enrollments for this course will be permanently deleted.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="deleteCourse()">
+                    <i class="bi bi-trash me-1"></i>Delete Course
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <style>
+        .course-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .course-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+        }
+    </style>
+    <script>
+        let editModal, deleteModal;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            editModal = new bootstrap.Modal(document.getElementById('editCourseModal'));
+            deleteModal = new bootstrap.Modal(document.getElementById('deleteCourseModal'));
+        });
+
+        function navigateToCourse(courseId, event) {
+            // Don't navigate if clicking on buttons
+            if (event.target.closest('button') || event.target.closest('.btn')) {
+                return;
+            }
+            window.location.href = `/Instructor/Courses/CourseEdit/${courseId}`;
+        }
+
+        function showAlert(message, type = 'success') {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    <i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+            alertContainer.innerHTML = alertHtml;
+
+            // Auto-dismiss after 5 seconds
+            setTimeout(() => {
+                const alert = alertContainer.querySelector('.alert');
+                if (alert) {
+                    alert.classList.remove('show');
+                    setTimeout(() => alert.remove(), 150);
+                }
+            }, 5000);
+        }
+
+        async function openEditModal(courseId) {
+            try {
+                const response = await fetch(`/api/Courses/edit/${courseId}`);
+                if (!response.ok) {
+                    throw new Error('Failed to load course details');
+                }
+
+                const course = await response.json();
+
+                // Populate form
+                document.getElementById('editCourseId').value = course.id;
+                document.getElementById('editCourseTitle').value = course.title;
+                document.getElementById('editCourseDescription').value = course.description || '';
+                document.getElementById('editCourseCategory').value = course.categoryId || '';
+                document.getElementById('editCourseIsPublished').checked = course.isPublished;
+
+                // Handle thumbnail preview
+                const thumbnailContainer = document.getElementById('currentThumbnailContainer');
+                const thumbnailImg = document.getElementById('currentThumbnail');
+                if (course.thumbnailPath) {
+                    thumbnailImg.src = course.thumbnailPath;
+                    thumbnailContainer.style.display = 'block';
+                } else {
+                    thumbnailContainer.style.display = 'none';
+                }
+
+                // Clear file input
+                document.getElementById('editCourseThumbnail').value = '';
+
+                editModal.show();
+            } catch (error) {
+                showAlert('Error loading course: ' + error.message, 'danger');
+            }
+        }
+
+        async function saveCourse() {
+            const courseId = document.getElementById('editCourseId').value;
+            const title = document.getElementById('editCourseTitle').value.trim();
+
+            if (!title || title.length < 3) {
+                showAlert('Title must be at least 3 characters', 'danger');
+                return;
+            }
+
+            const courseData = {
+                id: parseInt(courseId),
+                title: title,
+                description: document.getElementById('editCourseDescription').value,
+                categoryId: document.getElementById('editCourseCategory').value || null,
+                isPublished: document.getElementById('editCourseIsPublished').checked,
+                thumbnailPath: document.getElementById('currentThumbnail').src || null
+            };
+
+            try {
+                // Handle thumbnail upload first if a new file is selected
+                const thumbnailFile = document.getElementById('editCourseThumbnail').files[0];
+                if (thumbnailFile) {
+                    const formData = new FormData();
+                    formData.append('thumbnail', thumbnailFile);
+
+                    const uploadResponse = await fetch(`/api/Courses/${courseId}/Thumbnail`, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (uploadResponse.ok) {
+                        const uploadResult = await uploadResponse.json();
+                        courseData.thumbnailPath = uploadResult.thumbnailPath;
+                    }
+                }
+
+                // Update course
+                const response = await fetch(`/api/Courses/${courseId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(courseData)
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    throw new Error(error || 'Failed to update course');
+                }
+
+                editModal.hide();
+                showAlert('Course updated successfully!', 'success');
+
+                // Reload page to show updated data
+                setTimeout(() => location.reload(), 1000);
+            } catch (error) {
+                showAlert('Error saving course: ' + error.message, 'danger');
+            }
+        }
+
+        function openDeleteModal(courseId, courseTitle) {
+            document.getElementById('deleteCourseId').value = courseId;
+            document.getElementById('deleteCourseTitle').textContent = courseTitle;
+            deleteModal.show();
+        }
+
+        async function deleteCourse() {
+            const courseId = document.getElementById('deleteCourseId').value;
+
+            try {
+                const response = await fetch(`/api/Courses/${courseId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    throw new Error(error || 'Failed to delete course');
+                }
+
+                deleteModal.hide();
+
+                // Remove the card from UI
+                const card = document.getElementById(`course-card-${courseId}`);
+                if (card) {
+                    card.remove();
+                }
+
+                showAlert('Course deleted successfully!', 'success');
+
+                // Check if no courses left
+                const coursesContainer = document.getElementById('coursesContainer');
+                if (coursesContainer && coursesContainer.children.length === 0) {
+                    location.reload();
+                }
+            } catch (error) {
+                showAlert('Error deleting course: ' + error.message, 'danger');
+            }
+        }
+    </script>
+}

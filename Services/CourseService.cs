@@ -28,11 +28,18 @@ namespace Learnly.Services
                     Title = c.Title,
                     Slug = c.Slug,
                     ThumbnailPath = c.ThumbnailPath ?? string.Empty,
-                    InstructorName = c.Instructor!.DisplayName ?? "Unknown Instructor", // Assuming Instructor is loaded or joined
+                    InstructorName = c.Instructor!.DisplayName ?? "Unknown Instructor",
                     ShortDescription = c.Description != null && c.Description.Length > 150 ? c.Description.Substring(0, 150) + "..." : c.Description ?? string.Empty,
-                    ProgressPercent = null, // This would require user-specific enrollment data, not covered in public summaries
-                    IsPublished = c.IsPublished
+                    ProgressPercent = null,
+                    IsPublished = c.IsPublished,
+                    // Additional details
+                    ModuleCount = c.Modules.Count,
+                    LessonCount = c.Modules.SelectMany(m => m.Lessons).Count(),
+                    EnrolledStudents = c.Enrollments.Count,
+                    CategoryName = c.Category != null ? c.Category.Name : null,
+                    CreatedAt = c.CreatedAt
                 })
+                .OrderByDescending(c => c.CreatedAt)
                 .ToListAsync();
         }
 
@@ -80,13 +87,13 @@ namespace Learnly.Services
                 Description = course.Description ?? string.Empty,
                 InstructorName = course.Instructor?.DisplayName ?? "Unknown Instructor",
                 ThumbnailPath = course.ThumbnailPath ?? string.Empty,
-                Price = course.Price,
                 IsEnrolled = isEnrolled,
                 Modules = course.Modules.OrderBy(m => m.OrderIndex).Select(m => new ModuleVm
                 {
                     Id = m.Id,
                     Title = m.Title,
                     Order = m.OrderIndex,
+                    ThumbnailPath = m.ThumbnailPath,
                     Lessons = m.Lessons.OrderBy(l => l.OrderIndex).Select(l => new LessonVm
                     {
                         Id = l.Id,
@@ -94,7 +101,8 @@ namespace Learnly.Services
                         ContentType = l.ContentType,
                         DurationSeconds = l.DurationSeconds,
                         Order = l.OrderIndex,
-                        IsCompleted = completedLessonIds.Contains(l.Id) // Set IsCompleted dynamically
+                        IsCompleted = completedLessonIds.Contains(l.Id), // Set IsCompleted dynamically
+                        ThumbnailPath = l.ThumbnailPath
                     }).ToList()
                 }).ToList()
             };
@@ -156,20 +164,25 @@ namespace Learnly.Services
 
         public async Task<CourseDetailVm> CreateCourseAsync(CourseCreateUpdateDto courseDto)
         {
-            // Check for slug uniqueness
-            if (await _context.Courses.AnyAsync(c => c.Slug == courseDto.Slug))
+            // Auto-generate slug from title
+            var slug = GenerateSlug(courseDto.Title);
+
+            // Ensure slug uniqueness by appending a number if needed
+            var baseSlug = slug;
+            var counter = 1;
+            while (await _context.Courses.AnyAsync(c => c.Slug == slug))
             {
-                throw new InvalidOperationException($"A course with the slug '{courseDto.Slug}' already exists.");
+                slug = $"{baseSlug}-{counter}";
+                counter++;
             }
 
             var course = new Course
             {
                 Title = courseDto.Title,
-                Slug = courseDto.Slug,
+                Slug = slug,
                 Description = courseDto.Description,
                 InstructorId = courseDto.InstructorId.ToString(),
                 CategoryId = courseDto.CategoryId,
-                Price = courseDto.Price,
                 ThumbnailPath = courseDto.ThumbnailPath,
                 CreatedAt = DateTime.UtcNow,
                 IsPublished = courseDto.IsPublished
@@ -188,7 +201,6 @@ namespace Learnly.Services
                 Description = course.Description,
                 InstructorName = instructor?.DisplayName ?? "Unknown Instructor",
                 ThumbnailPath = course.ThumbnailPath,
-                Price = course.Price,
                 IsEnrolled = false,
                 Modules = new List<ModuleVm>()
             };
@@ -202,9 +214,7 @@ namespace Learnly.Services
                 {
                     Id = c.Id,
                     Title = c.Title,
-                    Slug = c.Slug,
                     Description = c.Description,
-                    Price = c.Price,
                     CategoryId = c.CategoryId,
                     ThumbnailPath = c.ThumbnailPath,
                     IsPublished = c.IsPublished,
@@ -219,20 +229,12 @@ namespace Learnly.Services
 
             if (course == null)
             {
-                // Handle case where course is not found, e.g., throw exception or return error
                 throw new KeyNotFoundException($"Course with ID {courseDto.Id} not found.");
             }
 
-            // Check for slug uniqueness if it's being changed
-            if (course.Slug != courseDto.Slug && await _context.Courses.AnyAsync(c => c.Slug == courseDto.Slug && c.Id != courseDto.Id))
-            {
-                throw new InvalidOperationException($"A course with the slug '{courseDto.Slug}' already exists.");
-            }
-
+            // Keep existing slug - don't change URLs after course is created
             course.Title = courseDto.Title;
-            course.Slug = courseDto.Slug;
             course.Description = courseDto.Description;
-            course.Price = courseDto.Price;
             course.CategoryId = courseDto.CategoryId;
             course.ThumbnailPath = courseDto.ThumbnailPath;
             course.IsPublished = courseDto.IsPublished;
@@ -246,7 +248,7 @@ namespace Learnly.Services
             return await _context.Enrollments.AnyAsync(e => e.CourseId == courseId && e.UserId == userId);
         }
 
-        public async Task<CourseSummaryVm?> GetCourseByIdAsync(int courseId) // Return type nullable
+        public async Task<CourseSummaryVm?> GetCourseByIdAsync(int courseId)
         {
             return await _context.Courses
                 .Where(c => c.Id == courseId)
@@ -255,12 +257,17 @@ namespace Learnly.Services
                     Id = c.Id,
                     Title = c.Title,
                     Slug = c.Slug,
-                    Price = c.Price,
                     ThumbnailPath = c.ThumbnailPath ?? string.Empty,
-                    InstructorName = c.Instructor!.DisplayName ?? "Unknown Instructor", // Assuming Instructor is loaded or joined
+                    InstructorName = c.Instructor!.DisplayName ?? "Unknown Instructor",
                     ShortDescription = c.Description != null && c.Description.Length > 150 ? c.Description.Substring(0, 150) + "..." : c.Description ?? string.Empty,
-                    ProgressPercent = null, // This would require user-specific enrollment data, not covered in public summaries
-                    IsPublished = c.IsPublished
+                    ProgressPercent = null,
+                    IsPublished = c.IsPublished,
+                    // Additional details
+                    ModuleCount = c.Modules.Count,
+                    LessonCount = c.Modules.SelectMany(m => m.Lessons).Count(),
+                    EnrolledStudents = c.Enrollments.Count,
+                    CategoryName = c.Category != null ? c.Category.Name : null,
+                    CreatedAt = c.CreatedAt
                 })
                 .FirstOrDefaultAsync();
         }
@@ -351,11 +358,40 @@ namespace Learnly.Services
                     ThumbnailPath = c.ThumbnailPath ?? string.Empty,
                     InstructorName = c.Instructor!.DisplayName ?? "Unknown Instructor",
                     ShortDescription = c.Description != null && c.Description.Length > 150 ? c.Description.Substring(0, 150) + "..." : c.Description ?? string.Empty,
-                    Price = c.Price,
                     ProgressPercent = null, // Not applicable for instructor view
-                    IsPublished = c.IsPublished
+                    IsPublished = c.IsPublished,
+                    // Additional details
+                    ModuleCount = c.Modules.Count,
+                    LessonCount = c.Modules.SelectMany(m => m.Lessons).Count(),
+                    EnrolledStudents = c.Enrollments.Count,
+                    CategoryName = c.Category != null ? c.Category.Name : null,
+                    CreatedAt = c.CreatedAt
                 })
+                .OrderByDescending(c => c.CreatedAt)
                 .ToListAsync();
+        }
+
+        private static string GenerateSlug(string title)
+        {
+            if (string.IsNullOrWhiteSpace(title))
+                return string.Empty;
+
+            // Convert to lowercase, remove special characters, replace spaces with hyphens
+            var slug = title.ToLowerInvariant().Trim();
+
+            // Remove special characters (keep only letters, numbers, spaces, and hyphens)
+            slug = System.Text.RegularExpressions.Regex.Replace(slug, @"[^\w\s-]", "");
+
+            // Replace spaces with hyphens
+            slug = System.Text.RegularExpressions.Regex.Replace(slug, @"\s+", "-");
+
+            // Replace multiple hyphens with single hyphen
+            slug = System.Text.RegularExpressions.Regex.Replace(slug, @"-+", "-");
+
+            // Trim hyphens from start and end
+            slug = slug.Trim('-');
+
+            return slug;
         }
     }
 }

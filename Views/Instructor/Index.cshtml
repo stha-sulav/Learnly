@@ -3,35 +3,104 @@
     ViewData["Title"] = "Instructor Dashboard";
 }
 
-<div class="container">
-    <h1 class="mt-4">@ViewData["Title"]</h1>
+<div class="container mt-4">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item active" aria-current="page"><i class="bi bi-mortarboard me-1"></i>Instructor Dashboard</li>
+        </ol>
+    </nav>
+
+    <h1>Instructor Dashboard</h1>
+
     <div class="row mt-4">
-        <div class="col-md-6">
+        <div class="col-md-4">
             <div class="card text-white bg-primary mb-3">
                 <div class="card-header">Total Courses</div>
                 <div class="card-body">
-                    <h5 class="card-title">@Model.TotalCourses</h5>
+                    <h4 class="card-title">@Model.TotalCourses</h4>
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
+        <div class="col-md-4">
             <div class="card text-white bg-success mb-3">
-                <div class="card-header">Total Students</div>
+                <div class="card-header">Published Courses</div>
                 <div class="card-body">
-                    <h5 class="card-title">@Model.TotalStudents</h5>
+                    <h4 class="card-title">@Model.PublishedCourses</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-warning mb-3">
+                <div class="card-header">Draft Courses</div>
+                <div class="card-body">
+                    <h4 class="card-title">@Model.DraftCourses</h4>
                 </div>
             </div>
         </div>
     </div>
-    <div class="row mt-4">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header">
-                    Instructor Actions
-                </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card text-white bg-info mb-3">
+                <div class="card-header">Total Students</div>
                 <div class="card-body">
-                    <a asp-controller="Instructor" asp-action="Create" class="btn btn-primary">Create New Course</a>
-                    <a asp-controller="Instructor" asp-action="MyCourses" class="btn btn-secondary">My Courses</a>
+                    <h4 class="card-title">@Model.TotalStudents</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-secondary mb-3">
+                <div class="card-header">Total Modules</div>
+                <div class="card-body">
+                    <h4 class="card-title">@Model.TotalModules</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-dark mb-3">
+                <div class="card-header">Total Lessons</div>
+                <div class="card-body">
+                    <h4 class="card-title">@Model.TotalLessons</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h4 class="mt-5 mb-3">Quick Actions</h4>
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-plus-circle display-4 text-primary mb-3"></i>
+                    <h5 class="card-title">Create Course</h5>
+                    <p class="card-text text-muted">Start creating a new course</p>
+                    <a asp-controller="Instructor" asp-action="Create" class="btn btn-primary">
+                        <i class="bi bi-arrow-right"></i> Create New
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-book display-4 text-success mb-3"></i>
+                    <h5 class="card-title">My Courses</h5>
+                    <p class="card-text text-muted">View and manage your courses</p>
+                    <a asp-area="Instructor" asp-page="/Courses/CourseList" class="btn btn-success">
+                        <i class="bi bi-arrow-right"></i> View Courses
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-bar-chart display-4 text-info mb-3"></i>
+                    <h5 class="card-title">Analytics</h5>
+                    <p class="card-text text-muted">View course performance stats</p>
+                    <a href="#" class="btn btn-info disabled">
+                        <i class="bi bi-arrow-right"></i> Coming Soon
+                    </a>
                 </div>
             </div>
         </div>

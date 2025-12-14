@@ -18,6 +18,8 @@ namespace Learnly.Models
 
         public int OrderIndex { get; set; }
 
+        public string? ThumbnailPath { get; set; }
+
         public ICollection<Lesson> Lessons { get; set; } = new HashSet<Lesson>();
     }
 }

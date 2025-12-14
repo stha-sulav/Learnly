@@ -1,0 +1,35 @@
+@using Learnly.Constants
+
+@{
+    string homeController = "Home";
+    string homeAction = "Index";
+    string homeIcon = "bi-house-door";
+    string homeText = "Home";
+
+    if (User.Identity != null && User.Identity.IsAuthenticated)
+    {
+        if (User.IsInRole(Roles.Admin))
+        {
+            homeController = "Admin";
+            homeAction = "Index";
+            homeIcon = "bi-shield-lock";
+            homeText = "Dashboard";
+        }
+        else if (User.IsInRole(Roles.Instructor))
+        {
+            homeController = "Instructor";
+            homeAction = "Index";
+            homeIcon = "bi-mortarboard";
+            homeText = "Dashboard";
+        }
+        else if (User.IsInRole(Roles.User))
+        {
+            homeController = "Dashboard";
+            homeAction = "Index";
+            homeIcon = "bi-speedometer2";
+            homeText = "Dashboard";
+        }
+    }
+}
+
+<li class="breadcrumb-item"><a asp-controller="@homeController" asp-action="@homeAction"><i class="bi @homeIcon me-1"></i>@homeText</a></li>

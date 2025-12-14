@@ -6,16 +6,42 @@
 
 @if (Model.Course == null)
 {
-    <div class="alert alert-warning" role="alert">
-        Course not found.
+    <div class="container mt-4">
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb">
+                <partial name="_HomeBreadcrumb" />
+                <li class="breadcrumb-item"><a asp-page="/Courses/Index"><i class="bi bi-journals me-1"></i>Courses</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Not Found</li>
+            </ol>
+        </nav>
+        <div class="alert alert-warning" role="alert">
+            Course not found.
+        </div>
     </div>
 }
 else
 {
     <div class="container mt-4">
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb">
+                <partial name="_HomeBreadcrumb" />
+                <li class="breadcrumb-item"><a asp-page="/Courses/Index"><i class="bi bi-journals me-1"></i>Courses</a></li>
+                <li class="breadcrumb-item active" aria-current="page"><i class="bi bi-book me-1"></i>@Model.Course.Title</li>
+            </ol>
+        </nav>
+
         <div class="row">
             <div class="col-lg-8">
-                <img src="@Model.Course.ThumbnailPath" class="img-fluid rounded mb-4" alt="@Model.Course.Title" style="max-height: 400px; width: 100%; object-fit: cover;">
+                @if (!string.IsNullOrEmpty(Model.Course.ThumbnailPath))
+                {
+                    <img src="@Model.Course.ThumbnailPath" class="img-fluid rounded mb-4" alt="@Model.Course.Title" style="max-height: 400px; width: 100%; object-fit: cover;">
+                }
+                else
+                {
+                    <div class="bg-secondary rounded mb-4 d-flex align-items-center justify-content-center" style="height: 300px; width: 100%;">
+                        <i class="bi bi-play-circle text-white" style="font-size: 6rem;"></i>
+                    </div>
+                }
                 <h1>@Model.Course.Title</h1>
                 <p class="lead text-muted">By @Model.Course.InstructorName</p>
                 <p>@Model.Course.Description</p>
@@ -27,14 +53,7 @@ else
                     }
                     else
                     {
-                        @if (Model.Course.Price == 0)
-                        {
-                            <button id="enroll-button" class="btn btn-primary btn-lg">Enroll for Free</button>
-                        }
-                        else
-                        {
-                            <button id="enroll-button" class="btn btn-primary btn-lg">Enroll for $@Model.Course.Price</button>
-                        }
+                        <button id="enroll-button" class="btn btn-primary btn-lg">Enroll Now</button>
                     }
                 </div>
 
@@ -45,6 +64,16 @@ else
                         <div class="accordion-item">
                             <h2 class="accordion-header" id="heading-@module.Id">
                                 <button class="accordion-button @(module.Order == 1 ? "" : "collapsed")" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-@module.Id" aria-expanded="@(module.Order == 1 ? "true" : "false")" aria-controls="collapse-@module.Id">
+                                    @if (!string.IsNullOrEmpty(module.ThumbnailPath))
+                                    {
+                                        <img src="@module.ThumbnailPath" alt="@module.Title" class="me-2 rounded" style="width: 40px; height: 30px; object-fit: cover;">
+                                    }
+                                    else
+                                    {
+                                        <div class="bg-secondary rounded d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 30px;">
+                                            <i class="bi bi-layers text-white"></i>
+                                        </div>
+                                    }
                                     @module.Order. @module.Title
                                 </button>
                             </h2>
@@ -54,8 +83,17 @@ else
                                         @foreach (var lesson in module.Lessons.OrderBy(l => l.Order))
                                         {
                                             <li class="list-group-item d-flex justify-content-between align-items-center">
-                                                <div>
-                                                    <i class="bi @(lesson.ContentType == Learnly.Models.ContentType.Video ? "bi-play-circle" : "bi-file-text") me-2"></i>
+                                                <div class="d-flex align-items-center">
+                                                    @if (!string.IsNullOrEmpty(lesson.ThumbnailPath))
+                                                    {
+                                                        <img src="@lesson.ThumbnailPath" alt="@lesson.Title" class="me-2 rounded" style="width: 32px; height: 24px; object-fit: cover;">
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="bg-secondary rounded d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 24px;">
+                                                            <i class="bi bi-book text-white" style="font-size: 0.75rem;"></i>
+                                                        </div>
+                                                    }
                                                     <a href="/Lessons/View/@lesson.Id" class="text-decoration-none @(lesson.IsCompleted ? "text-success" : "")">
                                                         @lesson.Order. @lesson.Title
                                                     </a>
@@ -82,7 +120,6 @@ else
                         <h4 class="card-title">Course Information</h4>
                         <ul class="list-group list-group-flush">
                             <li class="list-group-item"><strong>Instructor:</strong> @Model.Course.InstructorName</li>
-                            <li class="list-group-item"><strong>Price:</strong> $@Model.Course.Price</li>
                             <li class="list-group-item"><strong>Status:</strong> @(Model.Course.IsEnrolled ? "Enrolled" : "Not Enrolled")</li>
                         </ul>
                     </div>

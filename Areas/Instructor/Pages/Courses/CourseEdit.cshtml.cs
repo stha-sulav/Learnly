@@ -6,12 +6,14 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.Hosting;
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using System.IO;
 using Learnly.Constants;
-using System.Linq; // Added for .Linq operations
-using System; // Added for Exception
+using System.Linq;
+using System;
 
 namespace Learnly.Areas.Instructor.Pages.Courses
 {
@@ -20,13 +22,15 @@ namespace Learnly.Areas.Instructor.Pages.Courses
     {
         private readonly ICourseService _courseService;
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly IAdminService _adminService; // To get categories
+        private readonly IAdminService _adminService;
+        private readonly IWebHostEnvironment _webHostEnvironment;
 
-        public CourseEditModel(ICourseService courseService, UserManager<ApplicationUser> userManager, IAdminService adminService)
+        public CourseEditModel(ICourseService courseService, UserManager<ApplicationUser> userManager, IAdminService adminService, IWebHostEnvironment webHostEnvironment)
         {
             _courseService = courseService;
             _userManager = userManager;
             _adminService = adminService;
+            _webHostEnvironment = webHostEnvironment;
         }
 
         [TempData]
@@ -37,11 +41,14 @@ namespace Learnly.Areas.Instructor.Pages.Courses
         [BindProperty]
         public CourseCreateUpdateDto Course { get; set; } = new CourseCreateUpdateDto();
 
-        public SelectList Categories { get; set; } = new SelectList(new List<Category>(), "Id", "Name"); // Initialize to avoid null
+        [BindProperty]
+        public IFormFile? ThumbnailFile { get; set; }
+
+        public SelectList Categories { get; set; } = new SelectList(new List<Category>(), "Id", "Name");
 
         public bool IsEditMode => Course.Id != 0;
 
-        public async Task<IActionResult> OnGetAsync(int? id)
+        public async Task<IActionResult> OnGetAsync(int? id, bool created = false)
         {
             await LoadCategoriesAsync();
 
@@ -49,6 +56,12 @@ namespace Learnly.Areas.Instructor.Pages.Courses
             if (string.IsNullOrEmpty(userId))
             {
                 return RedirectToPage("/Identity/Account/Login");
+            }
+
+            // Only show success message if just created (via query param)
+            if (!created)
+            {
+                SuccessMessage = null;
             }
 
             if (id == null)
@@ -98,10 +111,27 @@ namespace Learnly.Areas.Instructor.Pages.Courses
                 return Forbid();
             }
 
+            // Clear ModelState errors for fields we set server-side
+            ModelState.Remove("Course.InstructorId");
+            ModelState.Remove("Course.ThumbnailPath");
+
             if (!ModelState.IsValid)
             {
-                ErrorMessage = "Please correct the errors in the form.";
+                // Get specific validation errors
+                var errors = ModelState.Where(x => x.Value?.Errors.Count > 0)
+                    .SelectMany(x => x.Value!.Errors.Select(e => $"{x.Key}: {e.ErrorMessage}"));
+                ErrorMessage = "Please correct the errors: " + string.Join("; ", errors);
                 return Page();
+            }
+
+            // Handle thumbnail upload
+            if (ThumbnailFile != null && ThumbnailFile.Length > 0)
+            {
+                var thumbnailPath = await SaveThumbnailAsync(ThumbnailFile);
+                if (thumbnailPath != null)
+                {
+                    Course.ThumbnailPath = thumbnailPath;
+                }
             }
 
             if (IsEditMode)
@@ -117,9 +147,9 @@ namespace Learnly.Areas.Instructor.Pages.Courses
                 {
                     ErrorMessage = "Course not found for update.";
                 }
-                catch (InvalidOperationException ex) // For slug duplication or other business logic errors
+                catch (InvalidOperationException ex) // For business logic errors
                 {
-                    ModelState.AddModelError("Course.Slug", ex.Message);
+                    ModelState.AddModelError("", ex.Message);
                     ErrorMessage = "Error updating course: " + ex.Message;
                 }
                 catch (Exception ex)
@@ -132,14 +162,14 @@ namespace Learnly.Areas.Instructor.Pages.Courses
                 // Create new course
                 try
                 {
-                    // Call the service method that returns CourseDetailVm, but we only need it to save
-                    await _courseService.CreateCourseAsync(Course);
-                    SuccessMessage = "Course created successfully!";
-                    return RedirectToPage("./CourseList");
+                    var createdCourse = await _courseService.CreateCourseAsync(Course);
+                    SuccessMessage = "Course created successfully! You can now add modules and lessons.";
+                    // Redirect to the same page in edit mode to add modules/lessons
+                    return RedirectToPage("./CourseEdit", new { id = createdCourse.Id, created = true });
                 }
-                catch (InvalidOperationException ex) // For slug duplication
+                catch (InvalidOperationException ex) // For business logic errors
                 {
-                    ModelState.AddModelError("Course.Slug", ex.Message);
+                    ModelState.AddModelError("", ex.Message);
                     ErrorMessage = "Error creating course: " + ex.Message;
                 }
                 catch (Exception ex)
@@ -154,8 +184,55 @@ namespace Learnly.Areas.Instructor.Pages.Courses
 
         private async Task LoadCategoriesAsync()
         {
-            var categories = await _adminService.GetCategoriesAsync(); // Assuming GetCategoriesAsync exists
+            var categories = await _adminService.GetCategoriesAsync();
             Categories = new SelectList(categories, "Id", "Name", Course.CategoryId);
+        }
+
+        private async Task<string?> SaveThumbnailAsync(IFormFile file)
+        {
+            try
+            {
+                // Validate file type
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+                var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+                if (!allowedExtensions.Contains(extension))
+                {
+                    ErrorMessage = "Invalid image format. Allowed formats: JPG, PNG, GIF, WebP";
+                    return null;
+                }
+
+                // Validate file size (max 5MB)
+                if (file.Length > 5 * 1024 * 1024)
+                {
+                    ErrorMessage = "Image file size must be less than 5MB.";
+                    return null;
+                }
+
+                // Create uploads directory if it doesn't exist
+                var uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "thumbnails");
+                if (!Directory.Exists(uploadsFolder))
+                {
+                    Directory.CreateDirectory(uploadsFolder);
+                }
+
+                // Generate unique filename
+                var uniqueFileName = $"{Guid.NewGuid()}{extension}";
+                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                // Save file
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(fileStream);
+                }
+
+                // Return relative path for storage
+                return $"/uploads/thumbnails/{uniqueFileName}";
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = $"Error uploading thumbnail: {ex.Message}";
+                return null;
+            }
         }
     }
 }

@@ -26,6 +26,8 @@ namespace Learnly.Models
 
         public int OrderIndex { get; set; }
 
+        public string? ThumbnailPath { get; set; }
+
         public ICollection<LessonProgress> LessonProgresses { get; set; } = new HashSet<LessonProgress>();
     }
 }
