@@ -26,7 +26,7 @@
             @foreach (var course in Model.Courses)
             {
                 <div class="col-lg-4 col-md-6 mb-4">
-                    <div class="card h-100 shadow-sm border-0 course-card" style="cursor: pointer;" onclick="window.location.href='/Courses/Details/@course.Slug'">
+                    <div class="card h-100 shadow-sm border-0 course-card" style="cursor: pointer;" onclick="window.location.href='/Courses/Details/@course.Id'">
                         <div class="position-relative" style="height: 180px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                             <div class="d-flex align-items-center justify-content-center position-absolute top-0 start-0 w-100 h-100">
                                 <i class="bi bi-play-circle text-white" style="font-size: 4rem;"></i>
@@ -52,7 +52,7 @@
                             </div>
 
                             <div class="mt-auto" onclick="event.stopPropagation();">
-                                <a href="/Courses/Details/@course.Slug" class="btn btn-outline-primary btn-sm w-100">
+                                <a href="/Courses/Details/@course.Id" class="btn btn-outline-primary btn-sm w-100">
                                     <i class="bi bi-eye me-1"></i>View Course
                                 </a>
                             </div>

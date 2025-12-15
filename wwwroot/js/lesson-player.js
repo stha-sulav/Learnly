@@ -9,10 +9,14 @@ document.addEventListener('DOMContentLoaded', function () {
     async function completeLesson() {
         const originalButtonText = markAsCompletedButton.innerHTML;
         const originalButtonDisabled = markAsCompletedButton.disabled;
+        const wasOutlineStyle = markAsCompletedButton.classList.contains('btn-outline-success');
 
         // Optimistic UI Update
         markAsCompletedButton.disabled = true;
-        markAsCompletedButton.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i> Completed';
+        markAsCompletedButton.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i><span>Completed</span>';
+        markAsCompletedButton.classList.remove('btn-outline-success');
+        markAsCompletedButton.classList.add('btn-success');
+        markAsCompletedButton.classList.add('btn-complete');
         showSpinner(markAsCompletedButton, ''); // Show a small spinner inside the button
 
         try {
@@ -29,6 +33,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Revert on failure
                 markAsCompletedButton.innerHTML = originalButtonText;
                 markAsCompletedButton.disabled = originalButtonDisabled;
+                if (wasOutlineStyle) {
+                    markAsCompletedButton.classList.remove('btn-success');
+                    markAsCompletedButton.classList.add('btn-outline-success');
+                }
                 showAlert('Failed to mark lesson as completed. Please try again.', 'error');
             }
             // On success, the UI is already updated, so we do nothing.
@@ -38,6 +46,10 @@ document.addEventListener('DOMContentLoaded', function () {
             // Revert on error
             markAsCompletedButton.innerHTML = originalButtonText;
             markAsCompletedButton.disabled = originalButtonDisabled;
+            if (wasOutlineStyle) {
+                markAsCompletedButton.classList.remove('btn-success');
+                markAsCompletedButton.classList.add('btn-outline-success');
+            }
             showAlert('An unexpected error occurred. Please check your connection and try again.', 'error');
         } finally {
             hideSpinner(markAsCompletedButton);

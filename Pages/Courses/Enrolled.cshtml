@@ -27,7 +27,7 @@
             @foreach (var course in Model.EnrolledCourses)
             {
                 <div class="col-lg-4 col-md-6 mb-4">
-                    <div class="card h-100 shadow-sm border-0 course-card" style="cursor: pointer; border-left: 4px solid #28a745 !important;" onclick="window.location.href='/Courses/Details/@course.Slug'">
+                    <div class="card h-100 shadow-sm border-0 course-card" style="cursor: pointer; border-left: 4px solid #28a745 !important;" onclick="window.location.href='/Courses/Details/@course.CourseId'">
                         <div class="position-relative" style="height: 180px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
                             <!-- Enrolled badge -->
                             <span class="badge bg-success position-absolute top-0 end-0 m-2 z-1"><i class="bi bi-check-circle me-1"></i>Enrolled</span>
@@ -66,7 +66,7 @@
                             <div class="mt-auto" onclick="event.stopPropagation();">
                                 @if (course.ProgressPercent == 100)
                                 {
-                                    <a href="/Courses/Details/@course.Slug" class="btn btn-outline-success btn-sm w-100">
+                                    <a href="/Courses/Details/@course.CourseId" class="btn btn-outline-success btn-sm w-100">
                                         <i class="bi bi-trophy me-1"></i>Completed - Review Course
                                     </a>
                                 }
@@ -78,7 +78,7 @@
                                 }
                                 else
                                 {
-                                    <a href="/Courses/Details/@course.Slug" class="btn btn-outline-success btn-sm w-100">
+                                    <a href="/Courses/Details/@course.CourseId" class="btn btn-outline-success btn-sm w-100">
                                         <i class="bi bi-eye me-1"></i>View Course
                                     </a>
                                 }

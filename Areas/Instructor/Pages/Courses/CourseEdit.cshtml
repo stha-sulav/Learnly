@@ -626,6 +626,27 @@
                     }
                 });
 
+                // Helper function to get video duration
+                function getVideoDuration(file) {
+                    return new Promise((resolve, reject) => {
+                        const video = document.createElement('video');
+                        video.preload = 'metadata';
+
+                        video.onloadedmetadata = function() {
+                            window.URL.revokeObjectURL(video.src);
+                            const duration = Math.round(video.duration);
+                            resolve(duration);
+                        };
+
+                        video.onerror = function() {
+                            window.URL.revokeObjectURL(video.src);
+                            resolve(0); // Default to 0 if we can't read duration
+                        };
+
+                        video.src = URL.createObjectURL(file);
+                    });
+                }
+
                 // Add Lesson
                 document.getElementById('add-lesson-btn').addEventListener('click', async function() {
                     const moduleId = document.getElementById('lesson-module-id').value;
@@ -667,19 +688,24 @@
                     const addLessonBtn = document.getElementById('add-lesson-btn');
                     const originalBtnText = addLessonBtn.innerHTML;
                     addLessonBtn.disabled = true;
-                    addLessonBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Uploading...';
+                    addLessonBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Reading video...';
 
                     let createdLessonId = null;
 
                     try {
-                        // Create lesson first
+                        // Get video duration before creating lesson
+                        const videoDuration = await getVideoDuration(videoFile);
+
+                        addLessonBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Uploading...';
+
+                        // Create lesson first with the video duration
                         const lessonResponse = await fetch(`/api/Lessons/ByModule/${moduleId}`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
                                 'RequestVerificationToken': requestVerificationToken
                             },
-                            body: JSON.stringify({ title: title, contentType: 0, durationSeconds: 0, orderIndex: orderIndex })
+                            body: JSON.stringify({ title: title, contentType: 0, durationSeconds: videoDuration, orderIndex: orderIndex })
                         });
 
                         if (!lessonResponse.ok) {

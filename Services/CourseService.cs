@@ -142,6 +142,87 @@ namespace Learnly.Services
             };
         }
 
+        public async Task<CourseDetailVm?> GetCourseWithCurriculumById(int courseId, string? userId)
+        {
+            var course = await _context.Courses
+                .Where(c => c.Id == courseId)
+                .Include(c => c.Instructor)
+                .Include(c => c.Category)
+                .Include(c => c.Modules)
+                    .ThenInclude(m => m.Lessons)
+                .Include(c => c.Enrollments)
+                .FirstOrDefaultAsync();
+
+            if (course == null)
+            {
+                return null;
+            }
+
+            // Check enrollment status if userId is provided
+            bool isEnrolled = false;
+            if (!string.IsNullOrEmpty(userId))
+            {
+                isEnrolled = course.Enrollments.Any(e => e.UserId == userId);
+            }
+
+            // Get user's completed lessons for this course if enrolled
+            var completedLessonIds = new HashSet<int>();
+            if (isEnrolled && !string.IsNullOrEmpty(userId))
+            {
+                completedLessonIds = await _context.LessonProgresses
+                    .Where(lp => lp.UserId == userId && lp.IsCompleted)
+                    .Join(_context.Lessons.Where(l => l.Module!.CourseId == course.Id),
+                        lp => lp.LessonId,
+                        l => l.Id,
+                        (lp, l) => l.Id)
+                    .ToHashSetAsync();
+            }
+
+            // Calculate totals
+            var allLessons = course.Modules.SelectMany(m => m.Lessons).ToList();
+            var totalDuration = allLessons.Sum(l => l.DurationSeconds);
+
+            // Get instructor name with fallbacks
+            var instructorName = course.Instructor?.DisplayName
+                ?? (course.Instructor != null && !string.IsNullOrEmpty(course.Instructor.FirstName)
+                    ? $"{course.Instructor.FirstName} {course.Instructor.LastName}".Trim()
+                    : course.Instructor?.UserName ?? "Unknown Instructor");
+
+            return new CourseDetailVm
+            {
+                Id = course.Id,
+                Title = course.Title,
+                Slug = course.Slug,
+                Description = course.Description ?? string.Empty,
+                InstructorName = instructorName,
+                ThumbnailPath = course.ThumbnailPath ?? string.Empty,
+                IsEnrolled = isEnrolled,
+                TotalModules = course.Modules.Count,
+                TotalLessons = allLessons.Count,
+                TotalDurationSeconds = totalDuration,
+                EnrolledStudents = course.Enrollments.Count,
+                CreatedAt = course.CreatedAt,
+                CategoryName = course.Category?.Name,
+                Modules = course.Modules.OrderBy(m => m.OrderIndex).Select(m => new ModuleVm
+                {
+                    Id = m.Id,
+                    Title = m.Title,
+                    Order = m.OrderIndex,
+                    ThumbnailPath = m.ThumbnailPath,
+                    Lessons = m.Lessons.OrderBy(l => l.OrderIndex).Select(l => new LessonVm
+                    {
+                        Id = l.Id,
+                        Title = l.Title,
+                        ContentType = l.ContentType,
+                        DurationSeconds = l.DurationSeconds,
+                        Order = l.OrderIndex,
+                        IsCompleted = completedLessonIds.Contains(l.Id),
+                        ThumbnailPath = l.ThumbnailPath
+                    }).ToList()
+                }).ToList()
+            };
+        }
+
         public async Task<LessonDetailVm?> GetLessonDetailsById(int lessonId, string? userId)
         {
             var lessonQuery = _context.Lessons
@@ -193,6 +274,101 @@ namespace Learnly.Services
                 HasQuiz = false, // Dynamic
                 Transcript = null, // Needs to be loaded from somewhere or part of content
                 PositionSeconds = positionSeconds // Dynamic
+            };
+        }
+
+        public async Task<LessonWithCurriculumVm?> GetLessonWithCurriculum(int lessonId, string? userId)
+        {
+            var lesson = await _context.Lessons
+                .Where(l => l.Id == lessonId)
+                .Include(l => l.Module)
+                    .ThenInclude(m => m.Course)
+                        .ThenInclude(c => c.Modules)
+                            .ThenInclude(m => m.Lessons)
+                .FirstOrDefaultAsync();
+
+            if (lesson == null)
+            {
+                return null;
+            }
+
+            var course = lesson.Module!.Course!;
+
+            // Get user's progress
+            int positionSeconds = 0;
+            bool isCompleted = false;
+            var completedLessonIds = new HashSet<int>();
+
+            if (!string.IsNullOrEmpty(userId))
+            {
+                var lessonProgress = await _context.LessonProgresses
+                    .FirstOrDefaultAsync(lp => lp.LessonId == lessonId && lp.UserId == userId);
+
+                if (lessonProgress != null)
+                {
+                    positionSeconds = lessonProgress.PositionSeconds;
+                    isCompleted = lessonProgress.IsCompleted;
+                }
+
+                // Get all completed lessons for this course
+                completedLessonIds = await _context.LessonProgresses
+                    .Where(lp => lp.UserId == userId && lp.IsCompleted)
+                    .Join(_context.Lessons.Where(l => l.Module!.CourseId == course.Id),
+                        lp => lp.LessonId,
+                        l => l.Id,
+                        (lp, l) => l.Id)
+                    .ToHashSetAsync();
+            }
+
+            // Get all lessons in order to find prev/next
+            var allLessons = course.Modules
+                .OrderBy(m => m.OrderIndex)
+                .SelectMany(m => m.Lessons.OrderBy(l => l.OrderIndex))
+                .ToList();
+
+            var currentIndex = allLessons.FindIndex(l => l.Id == lessonId);
+            var prevLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
+            var nextLesson = currentIndex < allLessons.Count - 1 ? allLessons[currentIndex + 1] : null;
+
+            return new LessonWithCurriculumVm
+            {
+                Id = lesson.Id,
+                Title = lesson.Title,
+                CourseId = course.Id,
+                CourseTitle = course.Title,
+                CourseSlug = course.Slug,
+                ModuleId = lesson.ModuleId,
+                ModuleTitle = lesson.Module!.Title,
+                ContentType = lesson.ContentType,
+                ContentPath = lesson.Content ?? string.Empty,
+                DurationSeconds = lesson.DurationSeconds,
+                IsCompleted = isCompleted,
+                NextLessonId = nextLesson?.Id,
+                NextLessonTitle = nextLesson?.Title,
+                PreviousLessonId = prevLesson?.Id,
+                PreviousLessonTitle = prevLesson?.Title,
+                HasQuiz = false,
+                Transcript = null,
+                PositionSeconds = positionSeconds,
+                Modules = course.Modules.OrderBy(m => m.OrderIndex).Select(m => new ModuleVm
+                {
+                    Id = m.Id,
+                    Title = m.Title,
+                    Order = m.OrderIndex,
+                    ThumbnailPath = m.ThumbnailPath,
+                    Lessons = m.Lessons.OrderBy(l => l.OrderIndex).Select(l => new LessonVm
+                    {
+                        Id = l.Id,
+                        Title = l.Title,
+                        ContentType = l.ContentType,
+                        DurationSeconds = l.DurationSeconds,
+                        Order = l.OrderIndex,
+                        IsCompleted = completedLessonIds.Contains(l.Id),
+                        ThumbnailPath = l.ThumbnailPath
+                    }).ToList()
+                }).ToList(),
+                TotalLessons = allLessons.Count,
+                CompletedLessons = completedLessonIds.Count
             };
         }
 

@@ -3,34 +3,33 @@ using Learnly.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Identity; // Added
-using Learnly.Models; // Added
-using System.Security.Claims; // Added
+using Microsoft.AspNetCore.Identity;
+using Learnly.Models;
 
 namespace Learnly.Pages.Courses
 {
     public class DetailsModel : PageModel
     {
         private readonly ICourseService _courseService;
-        private readonly UserManager<ApplicationUser> _userManager; // Added
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public DetailsModel(ICourseService courseService, UserManager<ApplicationUser> userManager) // Modified
+        public DetailsModel(ICourseService courseService, UserManager<ApplicationUser> userManager)
         {
             _courseService = courseService;
-            _userManager = userManager; // Added
+            _userManager = userManager;
         }
 
         public CourseDetailVm? Course { get; set; }
 
-        public async Task<IActionResult> OnGetAsync(string slug)
+        public async Task<IActionResult> OnGetAsync(int id)
         {
-            if (string.IsNullOrEmpty(slug))
+            if (id <= 0)
             {
                 return NotFound();
             }
 
-            var userId = _userManager.GetUserId(User); // Added
-            Course = await _courseService.GetCourseWithCurriculum(slug, userId); // Modified
+            var userId = _userManager.GetUserId(User);
+            Course = await _courseService.GetCourseWithCurriculumById(id, userId);
 
             if (Course == null)
             {

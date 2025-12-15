@@ -2,140 +2,251 @@
 @model Learnly.Pages.Lessons.LessonModel
 @{
     ViewData["Title"] = Model.Lesson?.Title ?? "Lesson";
+    ViewData["HideNavFooter"] = false;
 }
 
 @if (Model.Lesson == null)
 {
-    <div class="alert alert-warning" role="alert">
-        Lesson not found.
+    <div class="container mt-4">
+        <div class="alert alert-warning" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i>Lesson not found.
+        </div>
     </div>
 }
 else
 {
-    <div class="container-fluid mt-4">
-        <div class="row">
-            <!-- Main Content Area (Video/Article/Markdown) -->
-            <div class="col-lg-9">
-                <nav aria-label="breadcrumb" class="mb-3">
-                    <ol class="breadcrumb">
-                        <partial name="_HomeBreadcrumb" />
-                        <li class="breadcrumb-item"><a href="/Courses"><i class="bi bi-journals me-1"></i>Courses</a></li>
-                        <li class="breadcrumb-item"><a href="/Courses/Details/@Model.Lesson!.CourseSlug"><i class="bi bi-book me-1"></i>@Model.Lesson!.CourseTitle</a></li>
-                        <li class="breadcrumb-item active" aria-current="page"><i class="bi bi-play-circle me-1"></i>@Model.Lesson!.Title</li>
-                    </ol>
-                </nav>
+    <div class="learn-container">
+        <!-- Top Bar -->
+        <div class="learn-topbar">
+            <div class="d-flex align-items-center gap-3">
+                <a href="/Courses/Details/@Model.Lesson.CourseId" class="back-link text-decoration-none">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <span class="course-title">@Model.Lesson.CourseTitle</span>
+            </div>
+            <div class="progress-info">
+                <div class="progress" style="width: 160px; height: 6px;">
+                    <div class="progress-bar" role="progressbar" style="width: @Model.Lesson.ProgressPercent%;"
+                         aria-valuenow="@Model.Lesson.ProgressPercent" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <span class="progress-text">@Model.Lesson.CompletedLessons / @Model.Lesson.TotalLessons</span>
+                <button class="btn btn-link menu-toggle d-lg-none p-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#curriculumSidebar">
+                    <i class="bi bi-list"></i>
+                </button>
+            </div>
+        </div>
 
-                <h1>@Model.Lesson!.Title</h1>
-                <p class="lead text-muted">Module: @Model.Lesson!.ModuleTitle</p>
-
-                @if (Model.Lesson!.ContentType == Learnly.Models.ContentType.Video)
-                {
-                    <div class="ratio ratio-16x9 mb-4">
-                        <video id="lesson-video" controls class="w-100" src="/videos/protected/@Model.Lesson.CourseId/@Model.Lesson.ModuleId/@Model.Lesson.Id" poster="/img/video-placeholder.png"></video>
-                    </div>
-                    <p class="text-muted">Duration: @(Model.Lesson.DurationSeconds / 60)m @(Model.Lesson.DurationSeconds % 60)s</p>
-                    <div class="mb-4" id="lesson-data" data-lesson-id="@Model.Lesson!.Id" data-initial-position="@Model.Lesson.PositionSeconds">
-                        <button id="mark-as-completed-btn" class="btn btn-success" @(Model.Lesson.IsCompleted ? "disabled" : "")>
-                            @if (Model.Lesson.IsCompleted)
-                            {
-                                <i class="bi bi-check-circle-fill me-2"></i> @:Completed
-                            }
-                            else
-                            {
-                                <i class="bi bi-check-circle me-2"></i> @:Mark as Completed
-                            }
-                        </button>
-                    </div>
-                    @if (!string.IsNullOrEmpty(Model.Lesson!.Transcript))
+        <div class="learn-content">
+            <!-- Main Content Area -->
+            <div class="learn-main">
+                <!-- Video/Content Container -->
+                <div class="video-container">
+                    @if (Model.Lesson.ContentType == Learnly.Models.ContentType.Video)
                     {
-                        <div class="card mb-4">
-                            <div class="card-header">
-                                <h5>Transcript</h5>
-                            </div>
-                            <div class="card-body">
-                                <p>@Model.Lesson!.Transcript</p>
-                            </div>
+                        <div class="ratio ratio-16x9 w-100">
+                            <video id="lesson-video" controls
+                                   src="/videos/protected/@Model.Lesson.CourseId/@Model.Lesson.ModuleId/@Model.Lesson.Id"
+                                   poster="/img/video-placeholder.png"></video>
                         </div>
-                    }
-                }
-                else if (Model.Lesson!.ContentType == Learnly.Models.ContentType.Article || Model.Lesson!.ContentType == Learnly.Models.ContentType.Markdown)
-                {
-                    <div class="card mb-4">
-                        <div class="card-body">
-                            @* For simplicity, direct HTML/Markdown output. In a real app, use a markdown renderer. *@
-                            @Html.Raw(Model.Lesson!.ContentPath)
-                        </div>
-                    </div>
-                    @if (!string.IsNullOrEmpty(Model.Lesson!.Transcript))
-                    {
-                        <div class="card mb-4">
-                            <div class="card-header">
-                                <h5>Transcript</h5>
-                            </div>
-                            <div class="card-body">
-                                <p>@Model.Lesson!.Transcript</p>
-                            </div>
-                        </div>
-                    }
-                }
-
-                <div class="d-flex justify-content-between mb-4">
-                    @if (Model.Lesson!.PreviousLessonId != null)
-                    {
-                        <a href="/Lessons/View?lessonId=@Model.Lesson!.PreviousLessonId" class="btn btn-outline-primary">
-                            <i class="bi bi-arrow-left me-2"></i> Previous: @Model.Lesson!.PreviousLessonTitle
-                        </a>
                     }
                     else
                     {
-                        <span></span> @* Spacer for alignment *@
-                    }
-
-                    @if (Model.Lesson!.NextLessonId != null)
-                    {
-                        <a href="/Lessons/View?lessonId=@Model.Lesson!.NextLessonId" class="btn btn-outline-primary">
-                            Next: @Model.Lesson!.NextLessonTitle <i class="bi bi-arrow-right ms-2"></i>
-                        </a>
-                    }
-                    else
-                    {
-                        <span></span> @* Spacer for alignment *@
+                        <div class="article-content p-4 w-100">
+                            @Html.Raw(Model.Lesson.ContentPath)
+                        </div>
                     }
                 </div>
 
-                <!-- Comments Section Placeholder -->
-                <div class="mt-5">
-                    <h3>Comments</h3>
-                    <div class="card card-body">
-                        <p>Comments section coming soon...</p>
+                <!-- Lesson Info Panel -->
+                <div class="lesson-info">
+                    <div class="lesson-header p-4">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h1 class="lesson-title-main">@Model.Lesson.Title</h1>
+                                <div class="lesson-meta">
+                                    <span><i class="bi bi-folder2 me-1"></i>@Model.Lesson.ModuleTitle</span>
+                                    @if (Model.Lesson.ContentType == Learnly.Models.ContentType.Video && Model.Lesson.DurationSeconds > 0)
+                                    {
+                                        <span class="ms-3"><i class="bi bi-clock me-1"></i>@(Model.Lesson.DurationSeconds / 60)m @(Model.Lesson.DurationSeconds % 60)s</span>
+                                    }
+                                </div>
+                            </div>
+                            <div id="lesson-data" data-lesson-id="@Model.Lesson.Id" data-initial-position="@Model.Lesson.PositionSeconds">
+                                <button id="mark-as-completed-btn" class="btn btn-complete @(Model.Lesson.IsCompleted ? "btn-success" : "btn-outline-success")" @(Model.Lesson.IsCompleted ? "disabled" : "")>
+                                    @if (Model.Lesson.IsCompleted)
+                                    {
+                                        <i class="bi bi-check-circle-fill me-1"></i><span>Completed</span>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-check-circle me-1"></i><span>Mark Complete</span>
+                                    }
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.Lesson.Transcript))
+                    {
+                        <div class="px-4 pb-4">
+                            <div class="card border-0 bg-light">
+                                <div class="card-header bg-transparent border-0 fw-semibold">
+                                    <i class="bi bi-file-text me-2"></i>Transcript
+                                </div>
+                                <div class="card-body pt-0">
+                                    <p class="mb-0 text-secondary">@Model.Lesson.Transcript</p>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Navigation -->
+                    <div class="lesson-nav">
+                        @if (Model.Lesson.PreviousLessonId != null)
+                        {
+                            <a href="/Lessons/View/@Model.Lesson.PreviousLessonId" class="btn btn-nav-prev">
+                                <i class="bi bi-chevron-left me-1"></i> Previous
+                            </a>
+                        }
+                        else
+                        {
+                            <div></div>
+                        }
+
+                        @if (Model.Lesson.NextLessonId != null)
+                        {
+                            <a href="/Lessons/View/@Model.Lesson.NextLessonId" class="btn btn-nav-next">
+                                Next <i class="bi bi-chevron-right ms-1"></i>
+                            </a>
+                        }
+                        else
+                        {
+                            <a href="/Courses/Details/@Model.Lesson.CourseId" class="btn btn-nav-next">
+                                <i class="bi bi-check-circle me-1"></i> Complete Course
+                            </a>
+                        }
                     </div>
                 </div>
-
-                <!-- Quiz Widget Placeholder -->
-                @if (Model.Lesson!.HasQuiz)
-                {
-                    <div class="mt-4 d-flex align-items-center">
-                        <h5 class="me-3 mb-0">Quiz available for this lesson!</h5>
-                        <button class="btn btn-info btn-sm">Start Quiz</button>
-                    </div>
-                }
             </div>
 
-            <!-- Sidebar (Course Progress/Navigation) -->
-            <div class="col-lg-3">
-                <div class="card shadow-sm mt-4 mt-lg-0">
-                    <div class="card-body">
-                        <h5 class="card-title">Course Navigation</h5>
-                        <p class="card-text">Quick access to other lessons in this course.</p>
-                        <a href="/Courses/Details/@Model.Lesson!.CourseSlug" class="btn btn-primary btn-sm d-block">Back to Course Details</a>
+            <!-- Sidebar (Course Content) - Desktop -->
+            <div class="learn-sidebar d-none d-lg-flex">
+                <div class="sidebar-header">
+                    <h6 class="mb-0">Course content</h6>
+                </div>
+                <div class="sidebar-content">
+                    <div class="accordion accordion-flush" id="curriculumAccordion">
+                        @foreach (var module in Model.Lesson.Modules)
+                        {
+                            var moduleProgress = module.Lessons.Count(l => l.IsCompleted);
+                            var isCurrentModule = module.Id == Model.Lesson.ModuleId;
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button @(isCurrentModule ? "" : "collapsed")" type="button"
+                                            data-bs-toggle="collapse" data-bs-target="#module-@module.Id">
+                                        <div class="d-flex flex-column flex-grow-1 me-2">
+                                            <span class="module-title">Section @module.Order: @module.Title</span>
+                                            <span class="module-progress">@moduleProgress / @module.Lessons.Count completed</span>
+                                        </div>
+                                    </button>
+                                </h2>
+                                <div id="module-@module.Id" class="accordion-collapse collapse @(isCurrentModule ? "show" : "")">
+                                    <div class="accordion-body p-0">
+                                        <ul class="lesson-list">
+                                            @foreach (var lesson in module.Lessons)
+                                            {
+                                                var isCurrentLesson = lesson.Id == Model.Lesson.Id;
+                                                <li class="lesson-item @(isCurrentLesson ? "active" : "") @(lesson.IsCompleted && !isCurrentLesson ? "completed" : "")">
+                                                    <a href="/Lessons/View/@lesson.Id">
+                                                        <span class="lesson-status">
+                                                            @if (lesson.IsCompleted)
+                                                            {
+                                                                <i class="bi bi-check-circle-fill text-success"></i>
+                                                            }
+                                                            else if (isCurrentLesson)
+                                                            {
+                                                                <i class="bi bi-play-circle-fill text-primary"></i>
+                                                            }
+                                                            else
+                                                            {
+                                                                <i class="bi bi-circle text-muted"></i>
+                                                            }
+                                                        </span>
+                                                        <span class="lesson-title">@lesson.Order. @lesson.Title</span>
+                                                        <span class="lesson-duration">@TimeSpan.FromSeconds(lesson.DurationSeconds).ToString(@"m\:ss")</span>
+                                                    </a>
+                                                </li>
+                                            }
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        }
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Sidebar (Offcanvas) -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="curriculumSidebar" aria-labelledby="curriculumSidebarLabel">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="curriculumSidebarLabel">Course content</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <div class="accordion accordion-flush" id="curriculumAccordionMobile">
+                @foreach (var module in Model.Lesson.Modules)
+                {
+                    var moduleProgress = module.Lessons.Count(l => l.IsCompleted);
+                    var isCurrentModule = module.Id == Model.Lesson.ModuleId;
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button @(isCurrentModule ? "" : "collapsed")" type="button"
+                                    data-bs-toggle="collapse" data-bs-target="#module-mobile-@module.Id">
+                                <div class="d-flex flex-column flex-grow-1 me-2">
+                                    <span class="module-title">Section @module.Order: @module.Title</span>
+                                    <span class="module-progress">@moduleProgress / @module.Lessons.Count completed</span>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="module-mobile-@module.Id" class="accordion-collapse collapse @(isCurrentModule ? "show" : "")">
+                            <div class="accordion-body p-0">
+                                <ul class="lesson-list">
+                                    @foreach (var lesson in module.Lessons)
+                                    {
+                                        var isCurrentLesson = lesson.Id == Model.Lesson.Id;
+                                        <li class="lesson-item @(isCurrentLesson ? "active" : "") @(lesson.IsCompleted && !isCurrentLesson ? "completed" : "")">
+                                            <a href="/Lessons/View/@lesson.Id" data-bs-dismiss="offcanvas">
+                                                <span class="lesson-status">
+                                                    @if (lesson.IsCompleted)
+                                                    {
+                                                        <i class="bi bi-check-circle-fill text-success"></i>
+                                                    }
+                                                    else if (isCurrentLesson)
+                                                    {
+                                                        <i class="bi bi-play-circle-fill text-primary"></i>
+                                                    }
+                                                    else
+                                                    {
+                                                        <i class="bi bi-circle text-muted"></i>
+                                                    }
+                                                </span>
+                                                <span class="lesson-title">@lesson.Order. @lesson.Title</span>
+                                                <span class="lesson-duration">@TimeSpan.FromSeconds(lesson.DurationSeconds).ToString(@"m\:ss")</span>
+                                            </a>
+                                        </li>
+                                    }
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                }
             </div>
         </div>
     </div>
 }
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.js"></script>
     <script src="~/js/lesson-player.js"></script>
 }

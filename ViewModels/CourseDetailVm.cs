@@ -24,5 +24,35 @@ namespace Learnly.ViewModels
         public required string ThumbnailPath { get; set; }
         public bool IsEnrolled { get; set; }
         public List<ModuleVm> Modules { get; set; } = new List<ModuleVm>();
+
+        // Additional course information
+        public int TotalModules { get; set; }
+        public int TotalLessons { get; set; }
+        public int TotalDurationSeconds { get; set; }
+        public int EnrolledStudents { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public string? CategoryName { get; set; }
+
+        // Computed properties
+        public string TotalDurationFormatted
+        {
+            get
+            {
+                if (TotalDurationSeconds == 0)
+                {
+                    return "—"; // No content uploaded yet
+                }
+                var timeSpan = TimeSpan.FromSeconds(TotalDurationSeconds);
+                if (timeSpan.TotalHours >= 1)
+                {
+                    return $"{(int)timeSpan.TotalHours}h {timeSpan.Minutes}m";
+                }
+                if (timeSpan.Minutes > 0)
+                {
+                    return $"{timeSpan.Minutes}m {timeSpan.Seconds}s";
+                }
+                return $"{timeSpan.Seconds}s";
+            }
+        }
     }
 }
