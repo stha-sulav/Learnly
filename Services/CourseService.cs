@@ -223,60 +223,6 @@ namespace Learnly.Services
             };
         }
 
-        public async Task<LessonDetailVm?> GetLessonDetailsById(int lessonId, string? userId)
-        {
-            var lessonQuery = _context.Lessons
-                .Where(l => l.Id == lessonId)
-                .Include(l => l.Module)
-                    .ThenInclude(m => m.Course)
-                .AsQueryable();
-
-            var lesson = await lessonQuery.FirstOrDefaultAsync();
-
-            if (lesson == null)
-            {
-                return null;
-            }
-
-            int positionSeconds = 0;
-            bool isCompleted = false;
-
-            if (!string.IsNullOrEmpty(userId))
-            {
-                var lessonProgress = await _context.LessonProgresses
-                    .FirstOrDefaultAsync(lp => lp.LessonId == lessonId && lp.UserId == userId);
-
-                if (lessonProgress != null)
-                {
-                    positionSeconds = lessonProgress.PositionSeconds;
-                    isCompleted = lessonProgress.IsCompleted;
-                }
-            }
-
-            return new LessonDetailVm
-            {
-                Id = lesson.Id,
-                Title = lesson.Title,
-                CourseId = lesson.Module!.Course!.Id,
-                CourseTitle = lesson.Module!.Course!.Title,
-                CourseSlug = lesson.Module!.Course!.Slug,
-                ModuleId = lesson.ModuleId,
-                ModuleTitle = lesson.Module!.Title,
-                ContentType = lesson.ContentType,
-                ContentPath = lesson.Content ?? string.Empty, // Changed to Content
-                DurationSeconds = lesson.DurationSeconds,
-                IsCompleted = isCompleted, // Dynamic
-                // These would require more complex queries for prev/next and user progress
-                NextLessonId = (int?)_context.Lessons.Where(next => next.ModuleId == lesson.ModuleId && next.OrderIndex > lesson.OrderIndex).OrderBy(next => next.OrderIndex).Select(next => next.Id).FirstOrDefault(),
-                NextLessonTitle = _context.Lessons.Where(next => next.ModuleId == lesson.ModuleId && next.OrderIndex > lesson.OrderIndex).OrderBy(next => next.OrderIndex).Select(next => next.Title).FirstOrDefault(),
-                PreviousLessonId = (int?)_context.Lessons.Where(prev => prev.ModuleId == lesson.ModuleId && prev.OrderIndex < lesson.OrderIndex).OrderByDescending(prev => prev.OrderIndex).Select(prev => prev.Id).FirstOrDefault(),
-                PreviousLessonTitle = _context.Lessons.Where(prev => prev.ModuleId == lesson.ModuleId && prev.OrderIndex < lesson.OrderIndex).OrderByDescending(prev => prev.OrderIndex).Select(prev => prev.Title).FirstOrDefault(),
-                HasQuiz = false, // Dynamic
-                Transcript = null, // Needs to be loaded from somewhere or part of content
-                PositionSeconds = positionSeconds // Dynamic
-            };
-        }
-
         public async Task<LessonWithCurriculumVm?> GetLessonWithCurriculum(int lessonId, string? userId)
         {
             var lesson = await _context.Lessons

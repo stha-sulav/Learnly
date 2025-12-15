@@ -12,7 +12,8 @@
       "Bash(findstr:*)",
       "Bash(Select-String -Pattern \"error CS\")",
       "Bash(git rm:*)",
-      "Bash(Select-String -Pattern \"error|Build\")"
+      "Bash(Select-String -Pattern \"error|Build\")",
+      "Bash(ls:*)"
     ]
   }
 }

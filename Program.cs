@@ -52,7 +52,6 @@ builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IQuizService, QuizService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
-builder.Services.AddScoped<ISuperAdminDashboardService, SuperAdminDashboardService>();
 builder.Services.AddScoped<IModuleService, ModuleService>();
 builder.Services.AddScoped<ILessonService, LessonService>();
 builder.Services.AddHostedService<FileCleanupService>();

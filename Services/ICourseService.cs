@@ -11,7 +11,6 @@ namespace Learnly.Services
         Task<IEnumerable<CourseSummaryVm>> GetAvailableCoursesForUser(string? userId);
         Task<CourseDetailVm?> GetCourseWithCurriculum(string slug, string? userId); // Modified
         Task<CourseDetailVm?> GetCourseWithCurriculumById(int courseId, string? userId);
-        Task<LessonDetailVm?> GetLessonDetailsById(int lessonId, string? userId); // Modified
         Task<LessonWithCurriculumVm?> GetLessonWithCurriculum(int lessonId, string? userId);
         Task<CourseDetailVm> CreateCourseAsync(CourseCreateUpdateDto courseDto); // Renamed and modified
         Task UpdateCourseAsync(CourseCreateUpdateDto courseDto); // New
