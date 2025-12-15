@@ -120,6 +120,7 @@
         <script src="~/lib/microsoft-signalr/signalr.min.js"></script>
         <script src="~/js/notifications.js" asp-append-version="true"></script>
     }
+    <partial name="_StatusMessage" />
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

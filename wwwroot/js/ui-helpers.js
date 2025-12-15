@@ -32,7 +32,7 @@ function hideSpinner(container) {
     }
 }
 
-// Alert/Notification functions
+// Alert/Toast Notification functions
 function showAlert(message, type = 'info', duration = 5000) {
     const alertContainer = document.getElementById('alert-container');
     if (!alertContainer) {
@@ -40,17 +40,23 @@ function showAlert(message, type = 'info', duration = 5000) {
         return;
     }
 
+    // Normalize type (support Bootstrap's 'danger' as alias for 'error')
+    const normalizedType = type === 'danger' ? 'error' : type;
+
     const alertId = `alert-${Date.now()}`;
-    const alertClasses = {
-        'info': 'alert-info',
-        'success': 'alert-success',
-        'warning': 'alert-warning',
-        'error': 'alert-danger'
+    const alertConfig = {
+        'info': { class: 'alert-info', icon: 'bi-info-circle' },
+        'success': { class: 'alert-success', icon: 'bi-check-circle' },
+        'warning': { class: 'alert-warning', icon: 'bi-exclamation-circle' },
+        'error': { class: 'alert-danger', icon: 'bi-exclamation-triangle' }
     };
 
+    const config = alertConfig[normalizedType] || alertConfig['info'];
+
     const alertHtml = `
-        <div id="${alertId}" class="alert ${alertClasses[type] || 'alert-info'} alert-dismissible fade show" role="alert">
-            ${message}
+        <div id="${alertId}" class="alert ${config.class} alert-dismissible fade show d-flex align-items-center" role="alert">
+            <i class="bi ${config.icon} me-2 flex-shrink-0"></i>
+            <div class="flex-grow-1">${message}</div>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     `;
@@ -60,9 +66,11 @@ function showAlert(message, type = 'info', duration = 5000) {
     const alertElement = document.getElementById(alertId);
     if (duration) {
         setTimeout(() => {
-            const alert = bootstrap.Alert.getOrCreateInstance(alertElement);
-            if(alert) {
-                alert.close();
+            if (alertElement && alertElement.parentNode) {
+                const alert = bootstrap.Alert.getOrCreateInstance(alertElement);
+                if (alert) {
+                    alert.close();
+                }
             }
         }, duration);
     }

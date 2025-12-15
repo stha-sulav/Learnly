@@ -218,14 +218,35 @@ textarea.input-validation-error {
     100% { transform: rotate(360deg); }
 }
 
-/* --- Alert Container --- */
+/* --- Alert/Toast Container --- */
 #alert-container {
     position: fixed;
-    top: 80px;
+    bottom: 20px;
     right: 20px;
     z-index: 1060;
     min-width: 300px;
-    max-width: 90%;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 0.5rem;
+}
+
+#alert-container .alert {
+    margin-bottom: 0;
+    box-shadow: 0 0.25rem 0.75rem rgba(var(--bs-black-rgb), 0.1);
+    border-radius: 0.5rem;
+    animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 /* --- Navbar Styling --- */

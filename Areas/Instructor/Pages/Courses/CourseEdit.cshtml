@@ -276,13 +276,13 @@
 
 <style>
     .modules-tree .module-item {
-        border: 1px solid #dee2e6;
+        border: 1px solid var(--bs-border-color);
         border-radius: 8px;
         margin-bottom: 1rem;
         overflow: hidden;
     }
     .modules-tree .module-header {
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        background: linear-gradient(135deg, var(--bs-gray-100) 0%, var(--bs-gray-200) 100%);
         padding: 1rem;
         cursor: pointer;
         display: flex;
@@ -291,12 +291,32 @@
         transition: background-color 0.2s;
     }
     .modules-tree .module-header:hover {
-        background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+        background: linear-gradient(135deg, var(--bs-gray-200) 0%, var(--bs-gray-300) 100%);
     }
     .modules-tree .module-header .module-info {
         display: flex;
         align-items: center;
         gap: 0.75rem;
+        flex: 1;
+        min-width: 0;
+    }
+    .modules-tree .module-header .module-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        flex-shrink: 0;
+    }
+    .modules-tree .module-header .module-actions .btn {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0;
+    }
+    .modules-tree .module-header .module-actions .btn i {
+        font-size: 0.875rem;
     }
     .modules-tree .module-header .module-toggle {
         transition: transform 0.3s;
@@ -305,7 +325,7 @@
         transform: rotate(-90deg);
     }
     .modules-tree .module-body {
-        border-top: 1px solid #dee2e6;
+        border-top: 1px solid var(--bs-border-color);
         padding: 0;
     }
     .modules-tree .lessons-list {
@@ -318,35 +338,60 @@
         align-items: center;
         justify-content: space-between;
         padding: 0.75rem 1rem 0.75rem 2.5rem;
-        border-bottom: 1px solid #f0f0f0;
+        border-bottom: 1px solid var(--bs-border-color);
         transition: background-color 0.2s;
     }
     .modules-tree .lesson-item:last-child {
         border-bottom: none;
     }
     .modules-tree .lesson-item:hover {
-        background-color: #f8f9fa;
+        background-color: var(--bs-tertiary-bg);
     }
     .modules-tree .lesson-info {
         display: flex;
         align-items: center;
         gap: 0.5rem;
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+    }
+    .modules-tree .lesson-info span {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
     .modules-tree .lesson-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        flex-shrink: 0;
+        margin-left: 0.5rem;
         opacity: 0;
         transition: opacity 0.2s;
+    }
+    .modules-tree .lesson-actions .btn {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0;
+    }
+    .modules-tree .lesson-actions .btn i {
+        font-size: 0.875rem;
     }
     .modules-tree .lesson-item:hover .lesson-actions {
         opacity: 1;
     }
     .modules-tree .add-lesson-row {
         padding: 0.75rem 1rem 0.75rem 2.5rem;
-        background-color: #f8f9fa;
+        background-color: var(--bs-tertiary-bg);
     }
     .modules-tree .empty-lessons {
         padding: 1.5rem;
         text-align: center;
-        color: #6c757d;
+        color: var(--bs-secondary);
         font-style: italic;
     }
     .modules-tree .module-badge {
@@ -379,41 +424,6 @@
 
                 // Delete confirmation state
                 let deleteCallback = null;
-
-                // Alert helper function
-                function showAlert(message, type) {
-                    // Remove existing alerts
-                    const existingAlerts = document.querySelectorAll('.alert-dynamic');
-                    existingAlerts.forEach(alert => alert.remove());
-
-                    const alertClass = type === 'error' ? 'alert-danger' :
-                                       type === 'warning' ? 'alert-warning' :
-                                       type === 'info' ? 'alert-info' : 'alert-success';
-                    const iconClass = type === 'error' ? 'bi-exclamation-triangle' :
-                                      type === 'warning' ? 'bi-exclamation-circle' :
-                                      type === 'info' ? 'bi-info-circle' : 'bi-check-circle';
-
-                    const alertHtml = `
-                        <div class="alert ${alertClass} alert-dismissible fade show alert-dynamic" role="alert">
-                            <i class="bi ${iconClass} me-2"></i>${message}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    `;
-
-                    const container = document.querySelector('.card.shadow-sm.mt-4 .card-body') || document.querySelector('.container');
-                    if (container) {
-                        container.insertAdjacentHTML('afterbegin', alertHtml);
-
-                        // Auto-dismiss after 5 seconds
-                        setTimeout(() => {
-                            const alert = container.querySelector('.alert-dynamic');
-                            if (alert) {
-                                alert.classList.remove('show');
-                                setTimeout(() => alert.remove(), 150);
-                            }
-                        }, 5000);
-                    }
-                }
 
                 // Confirmation dialog helper
                 function showDeleteConfirm(message, callback) {
@@ -488,10 +498,10 @@
                                     <span class="badge bg-secondary module-badge">${lessonCount} lesson${lessonCount !== 1 ? 's' : ''}</span>
                                 </div>
                                 <div class="module-actions">
-                                    <button class="btn btn-sm btn-outline-success me-1 add-lesson-trigger" data-module-id="${module.id}" title="Add Lesson">
+                                    <button class="btn btn-sm btn-outline-success add-lesson-trigger" data-module-id="${module.id}" title="Add Lesson">
                                         <i class="bi bi-plus-lg"></i>
                                     </button>
-                                    <button class="btn btn-sm btn-outline-primary me-1 edit-module-trigger" data-module-id="${module.id}" data-module-title="${module.title}" data-module-thumbnail="${module.thumbnailPath || ''}" title="Edit Module">
+                                    <button class="btn btn-sm btn-outline-primary edit-module-trigger" data-module-id="${module.id}" data-module-title="${module.title}" data-module-thumbnail="${module.thumbnailPath || ''}" title="Edit Module">
                                         <i class="bi bi-pencil"></i>
                                     </button>
                                     <button class="btn btn-sm btn-outline-danger delete-module-trigger" data-module-id="${module.id}" title="Delete Module">
@@ -540,8 +550,8 @@
                                     ${hasVideo ? '<span class="badge bg-info ms-2">Video</span>' : ''}
                                 </div>
                                 <div class="lesson-actions">
-                                    ${hasVideo ? `<a href="${lesson.contentPath || lesson.videoPath}" target="_blank" class="btn btn-sm btn-outline-info me-1" title="Preview"><i class="bi bi-eye"></i></a>` : ''}
-                                    <button class="btn btn-sm btn-outline-primary me-1 edit-lesson-trigger" data-lesson-id="${lesson.id}" data-lesson-title="${lesson.title}" data-lesson-thumbnail="${lesson.thumbnailPath || ''}" title="Edit Lesson">
+                                    ${hasVideo ? `<a href="${lesson.contentPath || lesson.videoPath}" target="_blank" class="btn btn-sm btn-outline-info" title="Preview"><i class="bi bi-eye"></i></a>` : ''}
+                                    <button class="btn btn-sm btn-outline-primary edit-lesson-trigger" data-lesson-id="${lesson.id}" data-lesson-title="${lesson.title}" data-lesson-thumbnail="${lesson.thumbnailPath || ''}" title="Edit Lesson">
                                         <i class="bi bi-pencil"></i>
                                     </button>
                                     <button class="btn btn-sm btn-outline-danger delete-lesson-trigger" data-lesson-id="${lesson.id}" data-module-id="${module.id}" title="Delete Lesson">

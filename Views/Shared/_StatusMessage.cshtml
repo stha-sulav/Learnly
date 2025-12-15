@@ -1,7 +1,24 @@
 @if (TempData["StatusMessage"] != null)
 {
-    <div class="alert alert-success alert-dismissible fade show autodismiss" role="alert">
-        @TempData["StatusMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            showAlert('@Html.Raw(TempData["StatusMessage"].ToString().Replace("'", "\\'"))', 'success');
+        });
+    </script>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            showAlert('@Html.Raw(TempData["ErrorMessage"].ToString().Replace("'", "\\'"))', 'error');
+        });
+    </script>
+}
+@if (TempData["SuccessMessage"] != null)
+{
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            showAlert('@Html.Raw(TempData["SuccessMessage"].ToString().Replace("'", "\\'"))', 'success');
+        });
+    </script>
 }
