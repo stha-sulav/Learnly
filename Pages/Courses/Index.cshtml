@@ -2,9 +2,12 @@
 @model Learnly.Pages.Courses.IndexModel
 @{
     ViewData["Title"] = "Browse Courses";
+    var hasActiveFilters = !string.IsNullOrWhiteSpace(Model.SearchTerm) || Model.CategoryId.HasValue;
+    var courseCount = Model.FilteredCourses?.Count() ?? 0;
+    var totalCount = Model.Courses?.Count() ?? 0;
 }
 
-<div class="container mt-4">
+<div class="container-fluid mt-4 px-4">
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb">
             <partial name="_HomeBreadcrumb" />
@@ -12,56 +15,125 @@
         </ol>
     </nav>
 
-    <h1 class="mb-4">Browse Courses</h1>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">Browse Courses</h1>
+        <span class="text-muted">@courseCount of @totalCount courses</span>
+    </div>
 
-    @if (Model.Courses == null || !Model.Courses.Any())
-    {
-        <div class="alert alert-info" role="alert">
-            <i class="bi bi-info-circle me-2"></i>No courses available at the moment. Check back later!
-        </div>
-    }
-    else
-    {
-        <div class="row">
-            @foreach (var course in Model.Courses)
-            {
-                <div class="col-lg-4 col-md-6 mb-4">
-                    <div class="card h-100 shadow-sm border-0 course-card" style="cursor: pointer;" onclick="window.location.href='/Courses/Details/@course.Id'">
-                        <div class="position-relative" style="height: 180px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                            <div class="d-flex align-items-center justify-content-center position-absolute top-0 start-0 w-100 h-100">
-                                <i class="bi bi-play-circle text-white" style="font-size: 4rem;"></i>
-                            </div>
-                            @if (!string.IsNullOrWhiteSpace(course.ThumbnailPath))
-                            {
-                                <img src="@course.ThumbnailPath" class="card-img-top position-absolute top-0 start-0 w-100 h-100" alt="@course.Title" style="object-fit: cover;" onerror="this.style.display='none';">
-                            }
-                        </div>
-                        <div class="card-body d-flex flex-column">
-                            <h5 class="card-title mb-2">@course.Title</h5>
-
-                            <p class="text-muted small mb-2">
-                                <i class="bi bi-person me-1"></i>By @course.InstructorName
-                            </p>
-
-                            <p class="card-text text-muted small flex-grow-1">@course.ShortDescription</p>
-
-                            <div class="d-flex justify-content-between text-muted small mb-3 border-top border-bottom py-2">
-                                <span title="Modules"><i class="bi bi-collection me-1"></i>@course.ModuleCount Modules</span>
-                                <span title="Lessons"><i class="bi bi-play-btn me-1"></i>@course.LessonCount Lessons</span>
-                                <span title="Students"><i class="bi bi-people me-1"></i>@course.EnrolledStudents</span>
-                            </div>
-
-                            <div class="mt-auto" onclick="event.stopPropagation();">
-                                <a href="/Courses/Details/@course.Id" class="btn btn-outline-primary btn-sm w-100">
-                                    <i class="bi bi-eye me-1"></i>View Course
-                                </a>
-                            </div>
-                        </div>
+    <div class="row">
+        <!-- Sidebar Filters -->
+        <div class="col-lg-3 col-md-4 mb-4">
+            <div class="filter-sidebar">
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <i class="bi bi-funnel me-2"></i>Filter Courses
                     </div>
+                    <div class="card-body">
+                        <form method="get" id="filterForm">
+                            <div class="mb-3">
+                                <label for="SearchTerm" class="form-label">
+                                    <i class="bi bi-search me-1"></i>Search
+                                </label>
+                                <input type="text" class="form-control" id="SearchTerm" name="SearchTerm"
+                                       value="@Model.SearchTerm" placeholder="Search courses...">
+                            </div>
+                            <div class="mb-3">
+                                <label for="CategoryId" class="form-label">
+                                    <i class="bi bi-tag me-1"></i>Category
+                                </label>
+                                <select class="form-select" id="CategoryId" name="CategoryId" asp-items="Model.Categories">
+                                    <option value="">All Categories</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="SortBy" class="form-label">
+                                    <i class="bi bi-sort-down me-1"></i>Sort By
+                                </label>
+                                <select class="form-select" id="SortBy" name="SortBy">
+                                    <option value="newest" selected="@(Model.SortBy == "newest" || string.IsNullOrEmpty(Model.SortBy))">Newest First</option>
+                                    <option value="oldest" selected="@(Model.SortBy == "oldest")">Oldest First</option>
+                                    <option value="title_asc" selected="@(Model.SortBy == "title_asc")">Title (A-Z)</option>
+                                    <option value="title_desc" selected="@(Model.SortBy == "title_desc")">Title (Z-A)</option>
+                                    <option value="popular" selected="@(Model.SortBy == "popular")">Most Popular</option>
+                                </select>
+                            </div>
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary btn-filter">
+                                    <i class="bi bi-funnel-fill me-1"></i>Apply Filters
+                                </button>
+                                @if (hasActiveFilters)
+                                {
+                                    <a href="/Courses" class="btn btn-outline-secondary btn-reset">
+                                        <i class="bi bi-arrow-counterclockwise me-1"></i>Reset Filters
+                                    </a>
+                                }
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-lg-9 col-md-8">
+            @if (Model.FilteredCourses == null || !Model.FilteredCourses.Any())
+            {
+                <div class="alert alert-info" role="alert">
+                    <i class="bi bi-info-circle me-2"></i>
+                    @if (hasActiveFilters)
+                    {
+                        <span>No courses match your filters. <a href="/Courses" class="alert-link">Clear filters</a> to see all courses.</span>
+                    }
+                    else
+                    {
+                        <span>No courses available at the moment. Check back later!</span>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="row">
+                    @foreach (var course in Model.FilteredCourses)
+                    {
+                        <div class="col-xl-4 col-lg-6 col-md-12 mb-4">
+                            <div class="card h-100 shadow-sm border-0 course-card" style="cursor: pointer;" onclick="window.location.href='/Courses/Details/@course.Id'">
+                                <div class="position-relative course-card-header">
+                                    <div class="d-flex align-items-center justify-content-center position-absolute top-0 start-0 w-100 h-100">
+                                        <i class="bi bi-play-circle text-white" style="font-size: 4rem;"></i>
+                                    </div>
+                                    @if (!string.IsNullOrWhiteSpace(course.ThumbnailPath))
+                                    {
+                                        <img src="@course.ThumbnailPath" class="card-img-top position-absolute top-0 start-0 w-100 h-100" alt="@course.Title" style="object-fit: cover;" onerror="this.style.display='none';">
+                                    }
+                                </div>
+                                <div class="card-body d-flex flex-column">
+                                    <h5 class="card-title mb-2">@course.Title</h5>
+
+                                    <p class="text-muted small mb-2">
+                                        <i class="bi bi-person me-1"></i>By @course.InstructorName
+                                    </p>
+
+                                    <p class="card-text text-muted small flex-grow-1">@course.ShortDescription</p>
+
+                                    <div class="d-flex justify-content-between text-muted small mb-3 border-top border-bottom py-2">
+                                        <span title="Modules"><i class="bi bi-collection me-1"></i>@course.ModuleCount Modules</span>
+                                        <span title="Lessons"><i class="bi bi-play-btn me-1"></i>@course.LessonCount Lessons</span>
+                                        <span title="Students"><i class="bi bi-people me-1"></i>@course.EnrolledStudents</span>
+                                    </div>
+
+                                    <div class="mt-auto" onclick="event.stopPropagation();">
+                                        <a href="/Courses/Details/@course.Id" class="btn btn-outline-primary btn-sm w-100">
+                                            <i class="bi bi-eye me-1"></i>View Course
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
                 </div>
             }
         </div>
-    }
+    </div>
 </div>
 
 @section Scripts {
@@ -71,7 +143,11 @@
         }
         .course-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+            box-shadow: 0 0.5rem 1rem rgba(var(--bs-dark-rgb), 0.15) !important;
+        }
+        .course-card-header {
+            height: 180px;
+            background: linear-gradient(135deg, var(--bs-primary) 0%, var(--bs-indigo) 100%);
         }
     </style>
 }

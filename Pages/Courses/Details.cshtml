@@ -24,16 +24,15 @@ else
 
         <div class="row">
             <div class="col-lg-8">
-                @if (!string.IsNullOrEmpty(Model.Course.ThumbnailPath))
-                {
-                    <img src="@Model.Course.ThumbnailPath" class="img-fluid rounded mb-4" alt="@Model.Course.Title" style="max-height: 400px; width: 100%; object-fit: cover;">
-                }
-                else
-                {
-                    <div class="bg-secondary rounded mb-4 d-flex align-items-center justify-content-center" style="height: 300px; width: 100%;">
+                <div class="position-relative rounded mb-4 overflow-hidden" style="height: 300px; width: 100%; background: linear-gradient(135deg, var(--bs-primary) 0%, var(--bs-indigo) 100%);">
+                    <div class="d-flex align-items-center justify-content-center position-absolute top-0 start-0 w-100 h-100">
                         <i class="bi bi-play-circle text-white" style="font-size: 6rem;"></i>
                     </div>
-                }
+                    @if (!string.IsNullOrWhiteSpace(Model.Course.ThumbnailPath))
+                    {
+                        <img src="@Model.Course.ThumbnailPath" class="position-absolute top-0 start-0 w-100 h-100" alt="@Model.Course.Title" style="object-fit: cover;" onerror="this.style.display='none';">
+                    }
+                </div>
                 <h1>@Model.Course.Title</h1>
                 <p class="lead text-muted">By @Model.Course.InstructorName</p>
 
@@ -186,26 +185,31 @@ else
                         });
 
                         if (response.ok) {
-                            alert('Successfully enrolled in the course!');
-                            // Optionally, update the UI to show "Enrolled" state
+                            showAlert('Successfully enrolled in the course!', 'success');
+                            // Update the UI to show "Enrolled" state
                             enrollButton.disabled = true;
+                            enrollButton.classList.remove('btn-primary');
+                            enrollButton.classList.add('btn-success');
                             enrollButton.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i> Enrolled';
-                            location.reload(); // Reload the page to reflect enrollment status
+                            // Reload after a short delay to let user see the toast
+                            setTimeout(() => location.reload(), 1500);
                         } else if (response.status === 409) {
-                            alert('You are already enrolled in this course.');
+                            showAlert('You are already enrolled in this course.', 'info');
                             enrollButton.disabled = true;
+                            enrollButton.classList.remove('btn-primary');
+                            enrollButton.classList.add('btn-success');
                             enrollButton.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i> Enrolled';
                         }
                         else if (response.status === 401) {
-                            alert('Please log in to enroll in the course.');
-                            window.location.href = '/Identity/Account/Login';
+                            showAlert('Please log in to enroll in the course.', 'warning');
+                            setTimeout(() => window.location.href = '/Identity/Account/Login', 1500);
                         }
                         else {
-                            alert('Failed to enroll in the course. Please try again.');
+                            showAlert('Failed to enroll in the course. Please try again.', 'error');
                         }
                     } catch (error) {
                         console.error('Error:', error);
-                        alert('An error occurred during enrollment.');
+                        showAlert('An error occurred during enrollment.', 'error');
                     }
                 });
             }

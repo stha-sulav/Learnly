@@ -776,3 +776,65 @@ body:has(.learn-container) footer {
     background-color: var(--bs-secondary-bg);
     box-shadow: none;
 }
+
+/* --- Filter Sidebar Styling --- */
+.filter-sidebar {
+    position: sticky;
+    top: 80px;
+}
+
+.filter-sidebar .card {
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.filter-sidebar .card-header {
+    background-color: var(--bs-body-bg);
+    border-bottom: 1px solid var(--bs-border-color);
+    padding: 0.875rem 1rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--bs-body-color);
+}
+
+.filter-sidebar .card-header i {
+    color: var(--bs-primary);
+}
+
+.filter-sidebar .card-body {
+    padding: 1rem;
+}
+
+.filter-sidebar .form-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--bs-secondary-color);
+    margin-bottom: 0.375rem;
+}
+
+.filter-sidebar .form-label i {
+    color: var(--bs-secondary);
+}
+
+.filter-sidebar .form-control,
+.filter-sidebar .form-select {
+    font-size: 0.875rem;
+    border-color: var(--bs-border-color);
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.filter-sidebar .form-control:focus,
+.filter-sidebar .form-select:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.15);
+}
+
+.filter-sidebar .btn-filter {
+    font-weight: 500;
+    font-size: 0.875rem;
+}
+
+.filter-sidebar .btn-reset {
+    font-size: 0.8125rem;
+}

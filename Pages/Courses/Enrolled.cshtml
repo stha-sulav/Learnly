@@ -2,9 +2,12 @@
 @model Learnly.Pages.Courses.EnrolledModel
 @{
     ViewData["Title"] = "My Enrolled Courses";
+    var hasActiveFilters = !string.IsNullOrWhiteSpace(Model.SearchTerm) || !string.IsNullOrWhiteSpace(Model.ProgressStatus);
+    var courseCount = Model.FilteredCourses?.Count() ?? 0;
+    var totalCount = Model.EnrolledCourses?.Count() ?? 0;
 }
 
-<div class="container mt-4">
+<div class="container-fluid mt-4 px-4">
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb">
             <partial name="_HomeBreadcrumb" />
@@ -12,7 +15,10 @@
         </ol>
     </nav>
 
-    <h1 class="mb-4"><i class="bi bi-bookmark-check me-2"></i>My Enrolled Courses</h1>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0"><i class="bi bi-bookmark-check me-2"></i>My Enrolled Courses</h1>
+        <span class="text-muted">@courseCount of @totalCount courses</span>
+    </div>
 
     @if (Model.EnrolledCourses == null || !Model.EnrolledCourses.Any())
     {
@@ -24,69 +30,139 @@
     else
     {
         <div class="row">
-            @foreach (var course in Model.EnrolledCourses)
-            {
-                <div class="col-lg-4 col-md-6 mb-4">
-                    <div class="card h-100 shadow-sm border-0 course-card" style="cursor: pointer; border-left: 4px solid #28a745 !important;" onclick="window.location.href='/Courses/Details/@course.CourseId'">
-                        <div class="position-relative" style="height: 180px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
-                            <!-- Enrolled badge -->
-                            <span class="badge bg-success position-absolute top-0 end-0 m-2 z-1"><i class="bi bi-check-circle me-1"></i>Enrolled</span>
-                            <!-- Default placeholder -->
-                            <div class="d-flex align-items-center justify-content-center position-absolute top-0 start-0 w-100 h-100">
-                                <i class="bi bi-play-circle text-white" style="font-size: 4rem;"></i>
-                            </div>
-                            <!-- Thumbnail image -->
-                            @if (!string.IsNullOrWhiteSpace(course.ThumbnailPath))
-                            {
-                                <img src="@course.ThumbnailPath" class="card-img-top position-absolute top-0 start-0 w-100 h-100" alt="@course.Title" style="object-fit: cover;" onerror="this.style.display='none';">
-                            }
+            <!-- Sidebar Filters -->
+            <div class="col-lg-3 col-md-4 mb-4">
+                <div class="filter-sidebar">
+                    <div class="card shadow-sm">
+                        <div class="card-header">
+                            <i class="bi bi-funnel me-2"></i>Filter Courses
                         </div>
-                        <div class="card-body d-flex flex-column">
-                            <h5 class="card-title mb-3">@course.Title</h5>
-
-                            <!-- Progress Bar -->
-                            <div class="mb-2">
-                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <small class="text-muted">Progress</small>
-                                    <small class="fw-bold text-success">@course.ProgressPercent%</small>
+                        <div class="card-body">
+                            <form method="get" id="filterForm">
+                                <div class="mb-3">
+                                    <label for="SearchTerm" class="form-label">
+                                        <i class="bi bi-search me-1"></i>Search
+                                    </label>
+                                    <input type="text" class="form-control" id="SearchTerm" name="SearchTerm"
+                                           value="@Model.SearchTerm" placeholder="Search enrolled courses...">
                                 </div>
-                                <div class="progress" style="height: 10px;">
-                                    <div class="progress-bar bg-success" role="progressbar" style="width: @course.ProgressPercent%;" aria-valuenow="@course.ProgressPercent" aria-valuemin="0" aria-valuemax="100"></div>
+                                <div class="mb-3">
+                                    <label for="ProgressStatus" class="form-label">
+                                        <i class="bi bi-bar-chart me-1"></i>Progress Status
+                                    </label>
+                                    <select class="form-select" id="ProgressStatus" name="ProgressStatus">
+                                        <option value="">All Status</option>
+                                        <option value="not_started" selected="@(Model.ProgressStatus == "not_started")">Not Started</option>
+                                        <option value="in_progress" selected="@(Model.ProgressStatus == "in_progress")">In Progress</option>
+                                        <option value="completed" selected="@(Model.ProgressStatus == "completed")">Completed</option>
+                                    </select>
                                 </div>
-                            </div>
-
-                            @if (course.FirstIncompleteLessonTitle != null)
-                            {
-                                <p class="text-muted small mb-3">
-                                    <i class="bi bi-play-circle me-1"></i>Next: @course.FirstIncompleteLessonTitle
-                                </p>
-                            }
-
-                            <!-- Action Button -->
-                            <div class="mt-auto" onclick="event.stopPropagation();">
-                                @if (course.ProgressPercent == 100)
-                                {
-                                    <a href="/Courses/Details/@course.CourseId" class="btn btn-outline-success btn-sm w-100">
-                                        <i class="bi bi-trophy me-1"></i>Completed - Review Course
-                                    </a>
-                                }
-                                else if (course.FirstIncompleteLessonId.HasValue)
-                                {
-                                    <a href="/Lessons/View/@course.FirstIncompleteLessonId" class="btn btn-success btn-sm w-100">
-                                        <i class="bi bi-play-fill me-1"></i>Continue Learning
-                                    </a>
-                                }
-                                else
-                                {
-                                    <a href="/Courses/Details/@course.CourseId" class="btn btn-outline-success btn-sm w-100">
-                                        <i class="bi bi-eye me-1"></i>View Course
-                                    </a>
-                                }
-                            </div>
+                                <div class="mb-3">
+                                    <label for="SortBy" class="form-label">
+                                        <i class="bi bi-sort-down me-1"></i>Sort By
+                                    </label>
+                                    <select class="form-select" id="SortBy" name="SortBy">
+                                        <option value="progress_desc" selected="@(Model.SortBy == "progress_desc" || string.IsNullOrEmpty(Model.SortBy))">Progress (High to Low)</option>
+                                        <option value="progress_asc" selected="@(Model.SortBy == "progress_asc")">Progress (Low to High)</option>
+                                        <option value="title_asc" selected="@(Model.SortBy == "title_asc")">Title (A-Z)</option>
+                                        <option value="title_desc" selected="@(Model.SortBy == "title_desc")">Title (Z-A)</option>
+                                    </select>
+                                </div>
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-primary btn-filter">
+                                        <i class="bi bi-funnel-fill me-1"></i>Apply Filters
+                                    </button>
+                                    @if (hasActiveFilters)
+                                    {
+                                        <a href="/Courses/Enrolled" class="btn btn-outline-secondary btn-reset">
+                                            <i class="bi bi-arrow-counterclockwise me-1"></i>Reset Filters
+                                        </a>
+                                    }
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>
-            }
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-lg-9 col-md-8">
+                @if (Model.FilteredCourses == null || !Model.FilteredCourses.Any())
+                {
+                    <div class="alert alert-info" role="alert">
+                        <i class="bi bi-info-circle me-2"></i>
+                        No courses match your filters. <a href="/Courses/Enrolled" class="alert-link">Clear filters</a> to see all enrolled courses.
+                    </div>
+                }
+                else
+                {
+                    <div class="row">
+                        @foreach (var course in Model.FilteredCourses)
+                        {
+                            <div class="col-xl-4 col-lg-6 col-md-12 mb-4">
+                                <div class="card h-100 shadow-sm border-0 course-card enrolled-card" style="cursor: pointer;" onclick="window.location.href='/Courses/Details/@course.CourseId'">
+                                    <div class="position-relative course-card-header-enrolled">
+                                        <!-- Enrolled badge -->
+                                        <span class="badge bg-success position-absolute top-0 end-0 m-2 z-1"><i class="bi bi-check-circle me-1"></i>Enrolled</span>
+                                        <!-- Default placeholder -->
+                                        <div class="d-flex align-items-center justify-content-center position-absolute top-0 start-0 w-100 h-100">
+                                            <i class="bi bi-play-circle text-white" style="font-size: 4rem;"></i>
+                                        </div>
+                                        <!-- Thumbnail image -->
+                                        @if (!string.IsNullOrWhiteSpace(course.ThumbnailPath))
+                                        {
+                                            <img src="@course.ThumbnailPath" class="card-img-top position-absolute top-0 start-0 w-100 h-100" alt="@course.Title" style="object-fit: cover;" onerror="this.style.display='none';">
+                                        }
+                                    </div>
+                                    <div class="card-body d-flex flex-column">
+                                        <h5 class="card-title mb-3">@course.Title</h5>
+
+                                        <!-- Progress Bar -->
+                                        <div class="mb-2">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <small class="text-muted">Progress</small>
+                                                <small class="fw-bold text-success">@course.ProgressPercent%</small>
+                                            </div>
+                                            <div class="progress" style="height: 10px;">
+                                                <div class="progress-bar bg-success" role="progressbar" style="width: @course.ProgressPercent%;" aria-valuenow="@course.ProgressPercent" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                        </div>
+
+                                        @if (course.FirstIncompleteLessonTitle != null)
+                                        {
+                                            <p class="text-muted small mb-3">
+                                                <i class="bi bi-play-circle me-1"></i>Next: @course.FirstIncompleteLessonTitle
+                                            </p>
+                                        }
+
+                                        <!-- Action Button -->
+                                        <div class="mt-auto" onclick="event.stopPropagation();">
+                                            @if (course.ProgressPercent == 100)
+                                            {
+                                                <a href="/Courses/Details/@course.CourseId" class="btn btn-outline-success btn-sm w-100">
+                                                    <i class="bi bi-trophy me-1"></i>Completed - Review Course
+                                                </a>
+                                            }
+                                            else if (course.FirstIncompleteLessonId.HasValue)
+                                            {
+                                                <a href="/Lessons/View/@course.FirstIncompleteLessonId" class="btn btn-success btn-sm w-100">
+                                                    <i class="bi bi-play-fill me-1"></i>Continue Learning
+                                                </a>
+                                            }
+                                            else
+                                            {
+                                                <a href="/Courses/Details/@course.CourseId" class="btn btn-outline-success btn-sm w-100">
+                                                    <i class="bi bi-eye me-1"></i>View Course
+                                                </a>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
         </div>
     }
 </div>
@@ -98,7 +174,14 @@
         }
         .course-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+            box-shadow: 0 0.5rem 1rem rgba(var(--bs-dark-rgb), 0.15) !important;
+        }
+        .enrolled-card {
+            border-left: 4px solid var(--bs-success) !important;
+        }
+        .course-card-header-enrolled {
+            height: 180px;
+            background: linear-gradient(135deg, var(--bs-success) 0%, var(--bs-teal) 100%);
         }
     </style>
 }

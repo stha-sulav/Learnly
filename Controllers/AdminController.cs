@@ -32,7 +32,7 @@ namespace Learnly.Controllers
         }
 
         // GET: Admin/Users
-        public async Task<IActionResult> Users()
+        public async Task<IActionResult> Users(string? searchTerm, string? status, string? role, string? sortBy)
         {
             var users = await _userManager.Users.ToListAsync();
             var usersWithRoles = new List<UserWithRolesViewModel>();
@@ -45,7 +45,47 @@ namespace Learnly.Controllers
                     Roles = roles
                 });
             }
-            return View(usersWithRoles);
+
+            // Apply filters
+            var filtered = usersWithRoles.AsEnumerable();
+
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                filtered = filtered.Where(u =>
+                    (u.User.Email?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (u.User.FirstName?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (u.User.LastName?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false));
+            }
+
+            if (!string.IsNullOrWhiteSpace(status) && Enum.TryParse<Models.Enums.UserStatus>(status, out var userStatus))
+            {
+                filtered = filtered.Where(u => u.User.Status == userStatus);
+            }
+
+            if (!string.IsNullOrWhiteSpace(role))
+            {
+                filtered = filtered.Where(u => u.Roles.Contains(role));
+            }
+
+            // Apply sorting
+            filtered = sortBy switch
+            {
+                "email_asc" => filtered.OrderBy(u => u.User.Email),
+                "email_desc" => filtered.OrderByDescending(u => u.User.Email),
+                "name_asc" => filtered.OrderBy(u => u.User.FirstName).ThenBy(u => u.User.LastName),
+                "name_desc" => filtered.OrderByDescending(u => u.User.FirstName).ThenByDescending(u => u.User.LastName),
+                "status" => filtered.OrderBy(u => u.User.Status),
+                _ => filtered.OrderBy(u => u.User.Email)
+            };
+
+            // Pass filter values to view
+            ViewBag.SearchTerm = searchTerm;
+            ViewBag.Status = status;
+            ViewBag.Role = role;
+            ViewBag.SortBy = sortBy;
+            ViewBag.TotalCount = usersWithRoles.Count;
+
+            return View(filtered.ToList());
         }
 
         // GET: Admin/EditUser/{id}

@@ -13,7 +13,9 @@
       "Bash(Select-String -Pattern \"error CS\")",
       "Bash(git rm:*)",
       "Bash(Select-String -Pattern \"error|Build\")",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(taskkill:*)",
+      "Bash(powershell -Command:*)"
     ]
   }
 }

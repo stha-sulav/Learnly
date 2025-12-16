@@ -6,6 +6,11 @@
 
 @{
     ViewData["Title"] = "Manage Users";
+    var hasActiveFilters = !string.IsNullOrWhiteSpace(ViewBag.SearchTerm as string) ||
+                           !string.IsNullOrWhiteSpace(ViewBag.Status as string) ||
+                           !string.IsNullOrWhiteSpace(ViewBag.Role as string);
+    var filteredCount = Model.Count();
+    var totalCount = ViewBag.TotalCount ?? filteredCount;
 }
 
 <nav aria-label="breadcrumb" class="mb-3">
@@ -17,65 +22,159 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1>@ViewData["Title"]</h1>
+    <span class="text-muted">@filteredCount of @totalCount users</span>
 </div>
 
-<table class="table">
-    <thead>
-        <tr>
-            <th>Email</th>
-            <th>First Name</th>
-            <th>Last Name</th>
-            <th>Status</th>
-            <th>Role(s)</th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var userWithRoles in Model)
+<div class="row">
+    <!-- Sidebar Filters -->
+    <div class="col-lg-3 col-md-4 mb-4">
+        <div class="filter-sidebar">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <i class="bi bi-funnel me-2"></i>Filter Users
+                </div>
+                <div class="card-body">
+                    <form method="get" asp-action="Users">
+                        <div class="mb-3">
+                            <label for="searchTerm" class="form-label">
+                                <i class="bi bi-search me-1"></i>Search
+                            </label>
+                            <input type="text" class="form-control" id="searchTerm" name="searchTerm"
+                                   value="@ViewBag.SearchTerm" placeholder="Search by name or email...">
+                        </div>
+                        <div class="mb-3">
+                            <label for="status" class="form-label">
+                                <i class="bi bi-toggle-on me-1"></i>Status
+                            </label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="">All Status</option>
+                                <option value="Active" selected="@(ViewBag.Status == "Active")">Active</option>
+                                <option value="Suspended" selected="@(ViewBag.Status == "Suspended")">Suspended</option>
+                                <option value="Inactive" selected="@(ViewBag.Status == "Inactive")">Inactive</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="role" class="form-label">
+                                <i class="bi bi-person-badge me-1"></i>Role
+                            </label>
+                            <select class="form-select" id="role" name="role">
+                                <option value="">All Roles</option>
+                                <option value="@Roles.Admin" selected="@(ViewBag.Role == Roles.Admin)">Admin</option>
+                                <option value="@Roles.Instructor" selected="@(ViewBag.Role == Roles.Instructor)">Instructor</option>
+                                <option value="@Roles.User" selected="@(ViewBag.Role == Roles.User)">User</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="sortBy" class="form-label">
+                                <i class="bi bi-sort-down me-1"></i>Sort By
+                            </label>
+                            <select class="form-select" id="sortBy" name="sortBy">
+                                <option value="email_asc" selected="@(ViewBag.SortBy == "email_asc" || string.IsNullOrEmpty(ViewBag.SortBy as string))">Email (A-Z)</option>
+                                <option value="email_desc" selected="@(ViewBag.SortBy == "email_desc")">Email (Z-A)</option>
+                                <option value="name_asc" selected="@(ViewBag.SortBy == "name_asc")">Name (A-Z)</option>
+                                <option value="name_desc" selected="@(ViewBag.SortBy == "name_desc")">Name (Z-A)</option>
+                                <option value="status" selected="@(ViewBag.SortBy == "status")">Status</option>
+                            </select>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-filter">
+                                <i class="bi bi-funnel-fill me-1"></i>Apply Filters
+                            </button>
+                            @if (hasActiveFilters)
+                            {
+                                <a asp-action="Users" class="btn btn-outline-secondary btn-reset">
+                                    <i class="bi bi-arrow-counterclockwise me-1"></i>Reset Filters
+                                </a>
+                            }
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-lg-9 col-md-8">
+        @if (!Model.Any())
         {
-            var user = userWithRoles.User;
-            <tr>
-                <td>@user.Email</td>
-                <td>@user.FirstName</td>
-                <td>@user.LastName</td>
-                <td>
-                    <span class="badge @(user.Status == UserStatus.Active ? "bg-success" : (user.Status == UserStatus.Suspended ? "bg-danger" : "bg-secondary"))">
-                        @user.Status
-                    </span>
-                </td>
-                <td>
-                    @string.Join(", ", userWithRoles.Roles)
-                </td>
-                <td>
-                    @{
-                        var isAdmin = userWithRoles.Roles.Contains(Roles.Admin);
-                    }
-                    @if (!isAdmin)
-                    {
-                        <a asp-action="EditUser" asp-route-id="@user.Id" class="btn btn-sm btn-primary">Edit</a>
-                        @if (user.Status == UserStatus.Active)
-                        {
-                            <form asp-action="UpdateUserStatus" asp-controller="Admin" method="post" style="display:inline;">
-                                <input type="hidden" name="userId" value="@user.Id" />
-                                <input type="hidden" name="status" value="@UserStatus.Suspended" />
-                                <button type="submit" class="btn btn-sm btn-warning">Block</button>
-                            </form>
-                        }
-                        else
-                        {
-                            <form asp-action="UpdateUserStatus" asp-controller="Admin" method="post" style="display:inline;">
-                                <input type="hidden" name="userId" value="@user.Id" />
-                                <input type="hidden" name="status" value="@UserStatus.Active" />
-                                <button type="submit" class="btn btn-sm btn-success">Activate</button>
-                            </form>
-                        }
-                    }
-                    else
-                    {
-                        <span class="text-muted">Protected</span>
-                    }
-                </td>
-            </tr>
+            <div class="alert alert-info" role="alert">
+                <i class="bi bi-info-circle me-2"></i>
+                @if (hasActiveFilters)
+                {
+                    <span>No users match your filters. <a asp-action="Users" class="alert-link">Clear filters</a> to see all users.</span>
+                }
+                else
+                {
+                    <span>No users found.</span>
+                }
+            </div>
         }
-    </tbody>
-</table>
+        else
+        {
+            <div class="card shadow-sm">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Email</th>
+                                <th>First Name</th>
+                                <th>Last Name</th>
+                                <th>Status</th>
+                                <th>Role(s)</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var userWithRoles in Model)
+                            {
+                                var user = userWithRoles.User;
+                                <tr>
+                                    <td>@user.Email</td>
+                                    <td>@user.FirstName</td>
+                                    <td>@user.LastName</td>
+                                    <td>
+                                        <span class="badge @(user.Status == UserStatus.Active ? "bg-success" : (user.Status == UserStatus.Suspended ? "bg-danger" : "bg-secondary"))">
+                                            @user.Status
+                                        </span>
+                                    </td>
+                                    <td>
+                                        @string.Join(", ", userWithRoles.Roles)
+                                    </td>
+                                    <td>
+                                        @{
+                                            var isAdmin = userWithRoles.Roles.Contains(Roles.Admin);
+                                        }
+                                        @if (!isAdmin)
+                                        {
+                                            <a asp-action="EditUser" asp-route-id="@user.Id" class="btn btn-sm btn-primary">Edit</a>
+                                            @if (user.Status == UserStatus.Active)
+                                            {
+                                                <form asp-action="UpdateUserStatus" asp-controller="Admin" method="post" style="display:inline;">
+                                                    <input type="hidden" name="userId" value="@user.Id" />
+                                                    <input type="hidden" name="status" value="@UserStatus.Suspended" />
+                                                    <button type="submit" class="btn btn-sm btn-warning">Block</button>
+                                                </form>
+                                            }
+                                            else
+                                            {
+                                                <form asp-action="UpdateUserStatus" asp-controller="Admin" method="post" style="display:inline;">
+                                                    <input type="hidden" name="userId" value="@user.Id" />
+                                                    <input type="hidden" name="status" value="@UserStatus.Active" />
+                                                    <button type="submit" class="btn btn-sm btn-success">Activate</button>
+                                                </form>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Protected</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
+</div>

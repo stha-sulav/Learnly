@@ -66,18 +66,16 @@
                 <div class="mb-3">
                     <label class="form-label">Course Thumbnail</label>
                     <div class="mb-2">
-                        @if (!string.IsNullOrEmpty(Model.Course.ThumbnailPath))
-                        {
-                            <img src="@Model.Course.ThumbnailPath" alt="Current thumbnail" class="img-thumbnail" style="max-height: 150px;" />
-                            <p class="text-muted small mt-1">Current thumbnail</p>
-                        }
-                        else
-                        {
-                            <div class="bg-secondary rounded d-flex align-items-center justify-content-center img-thumbnail" style="width: 200px; height: 150px;">
+                        <div class="position-relative rounded overflow-hidden" style="width: 200px; height: 150px; background: linear-gradient(135deg, var(--bs-primary) 0%, var(--bs-indigo) 100%);">
+                            <div class="d-flex align-items-center justify-content-center position-absolute top-0 start-0 w-100 h-100">
                                 <i class="bi bi-play-circle text-white" style="font-size: 3rem;"></i>
                             </div>
-                            <p class="text-muted small mt-1">Default thumbnail (upload to change)</p>
-                        }
+                            @if (!string.IsNullOrWhiteSpace(Model.Course.ThumbnailPath))
+                            {
+                                <img src="@Model.Course.ThumbnailPath" alt="Current thumbnail" class="position-absolute top-0 start-0 w-100 h-100" style="object-fit: cover;" onerror="this.style.display='none';" />
+                            }
+                        </div>
+                        <p class="text-muted small mt-1">@(!string.IsNullOrWhiteSpace(Model.Course.ThumbnailPath) ? "Current thumbnail" : "Default thumbnail (upload to change)")</p>
                     </div>
                     <input type="file" asp-for="ThumbnailFile" class="form-control" accept="image/*" />
                     <small class="form-text text-muted">Accepted formats: JPG, PNG, GIF, WebP. Max size: 5MB</small>
