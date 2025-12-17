@@ -19,11 +19,21 @@ html {
 
 body {
     margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
 }
 
 main {
     padding-left: 15px;
     padding-right: 15px;
+    flex: 1;
+}
+
+body > .container-fluid {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 @media (min-width: 768px) {
