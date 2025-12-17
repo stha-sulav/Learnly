@@ -1,0 +1,413 @@
+@model Learnly.ViewModels.LandingPageViewModel
+@{
+    ViewData["Title"] = "Welcome to Learnly";
+}
+
+<div class="landing-page">
+<!-- Hero Section -->
+<section class="landing-hero">
+    <div class="container">
+        <div class="row align-items-center min-vh-75">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold mb-4">
+                    Learn Without Limits
+                </h1>
+                <p class="lead mb-4 text-white-75">
+                    Start, switch, or advance your career with thousands of courses from expert instructors.
+                    Learn at your own pace, anytime, anywhere.
+                </p>
+                <div class="d-flex gap-3 flex-wrap">
+                    <a asp-area="Identity" asp-page="/Account/RegisterStudent" class="btn btn-light btn-lg px-4">
+                        <i class="bi bi-rocket-takeoff me-2"></i>Get Started Free
+                    </a>
+                    <a asp-page="/Courses/Index" class="btn btn-outline-light btn-lg px-4">
+                        <i class="bi bi-compass me-2"></i>Browse Courses
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-6 d-none d-lg-block">
+                <div class="hero-illustration text-center">
+                    <i class="bi bi-mortarboard-fill hero-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="hero-wave">
+        <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M0 120L60 105C120 90 240 60 360 45C480 30 600 30 720 37.5C840 45 960 60 1080 67.5C1200 75 1320 75 1380 75L1440 75V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z" fill="white"/>
+        </svg>
+    </div>
+</section>
+
+<!-- Stats Section -->
+<section class="py-5 bg-white">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-6 col-md-3 mb-4 mb-md-0">
+                <div class="stat-item">
+                    <div class="stat-number text-primary">@Model.TotalCourses+</div>
+                    <div class="stat-label text-muted">Courses</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 mb-4 mb-md-0">
+                <div class="stat-item">
+                    <div class="stat-number text-primary">@Model.TotalStudents+</div>
+                    <div class="stat-label text-muted">Students</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-item">
+                    <div class="stat-number text-primary">@Model.TotalInstructors+</div>
+                    <div class="stat-label text-muted">Instructors</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-item">
+                    <div class="stat-number text-primary">@Model.TotalLessons+</div>
+                    <div class="stat-label text-muted">Lessons</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold mb-3">Why Choose Learnly?</h2>
+            <p class="text-muted lead">Everything you need to succeed in your learning journey</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-3">
+                <div class="feature-card h-100">
+                    <div class="feature-icon bg-primary bg-opacity-10 text-primary">
+                        <i class="bi bi-play-circle"></i>
+                    </div>
+                    <h5 class="fw-bold mb-2">Video Lessons</h5>
+                    <p class="text-muted mb-0">High-quality video content with progress tracking and resume capabilities.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="feature-card h-100">
+                    <div class="feature-icon bg-success bg-opacity-10 text-success">
+                        <i class="bi bi-clipboard-check"></i>
+                    </div>
+                    <h5 class="fw-bold mb-2">Quizzes & Tests</h5>
+                    <p class="text-muted mb-0">Test your knowledge with interactive quizzes and get instant feedback.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="feature-card h-100">
+                    <div class="feature-icon bg-warning bg-opacity-10 text-warning">
+                        <i class="bi bi-graph-up-arrow"></i>
+                    </div>
+                    <h5 class="fw-bold mb-2">Track Progress</h5>
+                    <p class="text-muted mb-0">Monitor your learning journey with detailed progress analytics.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="feature-card h-100">
+                    <div class="feature-icon bg-info bg-opacity-10 text-info">
+                        <i class="bi bi-clock-history"></i>
+                    </div>
+                    <h5 class="fw-bold mb-2">Learn Anytime</h5>
+                    <p class="text-muted mb-0">Access courses 24/7 from any device, at your own pace.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- How It Works Section -->
+<section class="py-5 bg-white">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold mb-3">How It Works</h2>
+            <p class="text-muted lead">Start learning in just 3 simple steps</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="text-center">
+                    <div class="step-number">1</div>
+                    <h5 class="fw-bold mb-2">Create an Account</h5>
+                    <p class="text-muted">Sign up for free and set up your learner profile in seconds.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="text-center">
+                    <div class="step-number">2</div>
+                    <h5 class="fw-bold mb-2">Enroll in Courses</h5>
+                    <p class="text-muted">Browse our catalog and enroll in courses that match your interests.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="text-center">
+                    <div class="step-number">3</div>
+                    <h5 class="fw-bold mb-2">Start Learning</h5>
+                    <p class="text-muted">Watch lessons, complete quizzes, and track your progress.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Featured Courses Section -->
+@if (Model.FeaturedCourses.Any())
+{
+    <section class="py-5 bg-light">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="fw-bold mb-1">Featured Courses</h2>
+                    <p class="text-muted mb-0">Explore our most popular courses</p>
+                </div>
+                <a asp-page="/Courses/Index" class="btn btn-outline-primary">
+                    View All <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+            <div class="row g-4">
+                @foreach (var course in Model.FeaturedCourses)
+                {
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 shadow-sm border-0 course-card" style="cursor: pointer;" onclick="window.location.href='/Courses/Details/@course.Id'">
+                            <div class="position-relative course-card-header">
+                                <div class="d-flex align-items-center justify-content-center position-absolute top-0 start-0 w-100 h-100">
+                                    <i class="bi bi-play-circle text-white" style="font-size: 3rem;"></i>
+                                </div>
+                                @if (!string.IsNullOrWhiteSpace(course.ThumbnailPath))
+                                {
+                                    <img src="@course.ThumbnailPath" class="card-img-top position-absolute top-0 start-0 w-100 h-100" alt="@course.Title" style="object-fit: cover;" onerror="this.style.display='none';">
+                                }
+                            </div>
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title mb-2">@course.Title</h5>
+                                <p class="text-muted small mb-2">
+                                    <i class="bi bi-person me-1"></i>By @course.InstructorName
+                                </p>
+                                <p class="card-text text-muted small flex-grow-1">@course.ShortDescription</p>
+                                <div class="d-flex justify-content-between text-muted small border-top pt-2 mt-2">
+                                    <span><i class="bi bi-collection me-1"></i>@course.ModuleCount Modules</span>
+                                    <span><i class="bi bi-people me-1"></i>@course.EnrolledStudents Students</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+}
+
+<!-- For Instructors Section -->
+<section class="py-5 bg-white">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6 mb-4 mb-lg-0">
+                <div class="instructor-illustration text-center">
+                    <i class="bi bi-person-workspace text-primary" style="font-size: 8rem; opacity: 0.8;"></i>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <h2 class="fw-bold mb-3">Become an Instructor</h2>
+                <p class="text-muted lead mb-4">
+                    Share your expertise with students around the world. Create engaging courses and help others learn.
+                </p>
+                <ul class="list-unstyled mb-4">
+                    <li class="d-flex align-items-center mb-3">
+                        <i class="bi bi-check-circle-fill text-success me-3 fs-5"></i>
+                        <span>Create and publish unlimited courses</span>
+                    </li>
+                    <li class="d-flex align-items-center mb-3">
+                        <i class="bi bi-check-circle-fill text-success me-3 fs-5"></i>
+                        <span>Upload video lessons and create quizzes</span>
+                    </li>
+                    <li class="d-flex align-items-center mb-3">
+                        <i class="bi bi-check-circle-fill text-success me-3 fs-5"></i>
+                        <span>Track student progress and engagement</span>
+                    </li>
+                    <li class="d-flex align-items-center">
+                        <i class="bi bi-check-circle-fill text-success me-3 fs-5"></i>
+                        <span>Build your teaching portfolio</span>
+                    </li>
+                </ul>
+                <a asp-area="Identity" asp-page="/Account/RegisterInstructor" class="btn btn-primary btn-lg">
+                    <i class="bi bi-person-plus me-2"></i>Start Teaching Today
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="landing-cta py-5">
+    <div class="container text-center">
+        <h2 class="fw-bold text-white mb-3">Ready to Start Learning?</h2>
+        <p class="text-white-75 lead mb-4">
+            Join thousands of students already learning on Learnly
+        </p>
+        <div class="d-flex gap-3 justify-content-center flex-wrap">
+            <a asp-area="Identity" asp-page="/Account/RegisterStudent" class="btn btn-light btn-lg px-4">
+                <i class="bi bi-person-plus me-2"></i>Sign Up Free
+            </a>
+            <a asp-area="Identity" asp-page="/Account/Login" class="btn btn-outline-light btn-lg px-4">
+                <i class="bi bi-box-arrow-in-right me-2"></i>Log In
+            </a>
+        </div>
+    </div>
+</section>
+</div>
+
+@section Scripts {
+    <style>
+        /* Remove main padding for landing page */
+        main:has(.landing-page) {
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+
+        .container-fluid:has(.landing-page) {
+            padding-left: 0;
+            padding-right: 0;
+        }
+
+        /* Hero Section */
+        .landing-hero {
+            background: linear-gradient(135deg, var(--bs-primary) 0%, var(--bs-indigo) 100%);
+            color: white;
+            position: relative;
+            overflow: hidden;
+            padding-top: 2rem;
+        }
+
+        .min-vh-75 {
+            min-height: 75vh;
+        }
+
+        .text-white-75 {
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        .hero-icon {
+            font-size: 15rem;
+            opacity: 0.9;
+            color: rgba(255, 255, 255, 0.9);
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @@keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .hero-wave {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            line-height: 0;
+        }
+
+        .hero-wave svg {
+            width: 100%;
+            height: auto;
+        }
+
+        /* Stats Section */
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .stat-label {
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        /* Feature Cards */
+        .feature-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Step Numbers */
+        .step-number {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--bs-primary) 0%, var(--bs-indigo) 100%);
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+        }
+
+        /* Course Cards */
+        .course-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+
+        .course-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0.5rem 1rem rgba(var(--bs-dark-rgb), 0.15) !important;
+        }
+
+        .course-card-header {
+            height: 160px;
+            background: linear-gradient(135deg, var(--bs-primary) 0%, var(--bs-indigo) 100%);
+        }
+
+        /* CTA Section */
+        .landing-cta {
+            background: linear-gradient(135deg, var(--bs-primary) 0%, var(--bs-indigo) 100%);
+        }
+
+        /* Responsive adjustments */
+        @@media (max-width: 991.98px) {
+            .hero-icon {
+                font-size: 10rem;
+            }
+
+            .stat-number {
+                font-size: 2rem;
+            }
+        }
+
+        @@media (max-width: 767.98px) {
+            .landing-hero {
+                padding-top: 1rem;
+            }
+
+            .min-vh-75 {
+                min-height: 60vh;
+            }
+
+            .display-4 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+}

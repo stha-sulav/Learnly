@@ -19,10 +19,20 @@
         <header>
             <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
                 <div class="container-fluid px-4">
-                    <a class="navbar-brand d-flex align-items-center" asp-controller="Dashboard" asp-action="Index">
-                        <i class="bi bi-mortarboard-fill text-primary me-2" style="font-size: 1.5rem;"></i>
-                        <span class="fw-bold" style="font-size: 1.25rem;">Learnly</span>
-                    </a>
+                    @if (User.Identity != null && User.Identity.IsAuthenticated)
+                    {
+                        <a class="navbar-brand d-flex align-items-center" asp-controller="Dashboard" asp-action="Index">
+                            <i class="bi bi-mortarboard-fill text-primary me-2" style="font-size: 1.5rem;"></i>
+                            <span class="fw-bold" style="font-size: 1.25rem;">Learnly</span>
+                        </a>
+                    }
+                    else
+                    {
+                        <a class="navbar-brand d-flex align-items-center" asp-controller="Home" asp-action="Index">
+                            <i class="bi bi-mortarboard-fill text-primary me-2" style="font-size: 1.5rem;"></i>
+                            <span class="fw-bold" style="font-size: 1.25rem;">Learnly</span>
+                        </a>
+                    }
                     <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                             aria-expanded="false" aria-label="Toggle navigation">
                         <span class="navbar-toggler-icon"></span>
@@ -74,6 +84,15 @@
                                         <a class="nav-link px-3 @(currentController == "admin" && currentAction == "categories" ? "active" : "")" asp-controller="Admin" asp-action="Categories"><i class="bi bi-tags me-1"></i>Categories</a>
                                     </li>
                                 }
+                            }
+                            else
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link px-3 @(currentController == "home" && currentAction == "index" ? "active" : "")" asp-controller="Home" asp-action="Index"><i class="bi bi-house me-1"></i>Home</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link px-3 @(currentPage == "/courses/index" ? "active" : "")" asp-page="/Courses/Index"><i class="bi bi-compass me-1"></i>Browse Courses</a>
+                                </li>
                             }
                         </ul>
                         <ul class="navbar-nav ms-auto align-items-center">

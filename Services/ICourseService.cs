@@ -20,5 +20,7 @@ namespace Learnly.Services
         Task<IEnumerable<CourseDashboardVm>> GetUserEnrolledCoursesAsync(string userId); // Renamed
         Task<IEnumerable<CourseDashboardVm>> GetDashboardCoursesWithProgressAsync(string userId); // New
         Task<IEnumerable<CourseSummaryVm>> GetInstructorCourseSummaries(string instructorId); // New
+        Task<IEnumerable<CourseSummaryVm>> GetFeaturedCoursesAsync(int count);
+        Task<PlatformStatsDto> GetPlatformStatsAsync();
     }
 }

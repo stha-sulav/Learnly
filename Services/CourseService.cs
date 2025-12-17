@@ -527,6 +527,54 @@ namespace Learnly.Services
                 .ToListAsync();
         }
 
+        public async Task<IEnumerable<CourseSummaryVm>> GetFeaturedCoursesAsync(int count)
+        {
+            return await _context.Courses
+                .Where(c => c.IsPublished)
+                .OrderByDescending(c => c.Enrollments.Count)
+                .ThenByDescending(c => c.CreatedAt)
+                .Take(count)
+                .Select(c => new CourseSummaryVm
+                {
+                    Id = c.Id,
+                    Title = c.Title,
+                    Slug = c.Slug,
+                    ThumbnailPath = c.ThumbnailPath ?? string.Empty,
+                    InstructorName = c.Instructor!.DisplayName ?? "Unknown Instructor",
+                    ShortDescription = c.Description != null && c.Description.Length > 150 ? c.Description.Substring(0, 150) + "..." : c.Description ?? string.Empty,
+                    ProgressPercent = null,
+                    IsPublished = c.IsPublished,
+                    ModuleCount = c.Modules.Count,
+                    LessonCount = c.Modules.SelectMany(m => m.Lessons).Count(),
+                    EnrolledStudents = c.Enrollments.Count,
+                    CategoryName = c.Category != null ? c.Category.Name : null,
+                    CreatedAt = c.CreatedAt
+                })
+                .ToListAsync();
+        }
+
+        public async Task<PlatformStatsDto> GetPlatformStatsAsync()
+        {
+            var totalCourses = await _context.Courses.CountAsync(c => c.IsPublished);
+            var totalStudents = await _context.Users
+                .Join(_context.UserRoles, u => u.Id, ur => ur.UserId, (u, ur) => new { u, ur })
+                .Join(_context.Roles.Where(r => r.Name == "User"), uur => uur.ur.RoleId, r => r.Id, (uur, r) => uur.u)
+                .CountAsync();
+            var totalInstructors = await _context.Users
+                .Join(_context.UserRoles, u => u.Id, ur => ur.UserId, (u, ur) => new { u, ur })
+                .Join(_context.Roles.Where(r => r.Name == "Instructor"), uur => uur.ur.RoleId, r => r.Id, (uur, r) => uur.u)
+                .CountAsync();
+            var totalLessons = await _context.Lessons.CountAsync();
+
+            return new PlatformStatsDto
+            {
+                TotalCourses = totalCourses,
+                TotalStudents = totalStudents,
+                TotalInstructors = totalInstructors,
+                TotalLessons = totalLessons
+            };
+        }
+
         private static string GenerateSlug(string title)
         {
             if (string.IsNullOrWhiteSpace(title))
