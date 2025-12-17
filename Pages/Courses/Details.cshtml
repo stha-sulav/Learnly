@@ -175,12 +175,21 @@ else
             if (enrollButton) {
                 enrollButton.addEventListener('click', async function () {
                     const courseId = @Model.Course.Id;
+
+                    // Check if user is authenticated by looking for CSRF token
+                    const csrfTokenElement = document.querySelector('input[name="__RequestVerificationToken"]');
+                    if (!csrfTokenElement) {
+                        const returnUrl = encodeURIComponent(window.location.pathname);
+                        window.location.href = `/Identity/Account/Login?ReturnUrl=${returnUrl}`;
+                        return;
+                    }
+
                     try {
                         const response = await fetch(`/api/courses/${courseId}/enroll`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
-                                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value // If CSRF token is used
+                                'RequestVerificationToken': csrfTokenElement.value
                             }
                         });
 
@@ -201,8 +210,8 @@ else
                             enrollButton.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i> Enrolled';
                         }
                         else if (response.status === 401) {
-                            showAlert('Please log in to enroll in the course.', 'warning');
-                            setTimeout(() => window.location.href = '/Identity/Account/Login', 1500);
+                            const returnUrl = encodeURIComponent(window.location.pathname);
+                            window.location.href = `/Identity/Account/Login?ReturnUrl=${returnUrl}`;
                         }
                         else {
                             showAlert('Failed to enroll in the course. Please try again.', 'error');

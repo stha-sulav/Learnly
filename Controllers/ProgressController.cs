@@ -1,6 +1,8 @@
 using Learnly.Data;
 using Learnly.Models;
+using Learnly.Services;
 using Learnly.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -12,15 +14,18 @@ namespace Learnly.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class ProgressController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ICourseService _courseService;
 
-        public ProgressController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+        public ProgressController(ApplicationDbContext context, UserManager<ApplicationUser> userManager, ICourseService courseService)
         {
             _context = context;
             _userManager = userManager;
+            _courseService = courseService;
         }
 
         [HttpPost("complete-lesson")]
@@ -37,11 +42,20 @@ namespace Learnly.Controllers
                 return Unauthorized();
             }
 
-            // Verify lesson exists
-            var lesson = await _context.Lessons.FindAsync(request.LessonId);
+            // Verify lesson exists and get course info
+            var lesson = await _context.Lessons
+                .Include(l => l.Module)
+                .FirstOrDefaultAsync(l => l.Id == request.LessonId);
             if (lesson == null)
             {
                 return NotFound("Lesson not found.");
+            }
+
+            // Verify user is enrolled in the course
+            var isEnrolled = await _courseService.IsUserEnrolledAsync(lesson.Module!.CourseId, userId);
+            if (!isEnrolled)
+            {
+                return Forbid();
             }
 
             var lessonProgress = await _context.LessonProgresses
@@ -85,6 +99,22 @@ namespace Learnly.Controllers
                 return Unauthorized();
             }
 
+            // Verify lesson exists and get course info
+            var lesson = await _context.Lessons
+                .Include(l => l.Module)
+                .FirstOrDefaultAsync(l => l.Id == request.LessonId);
+            if (lesson == null)
+            {
+                return NotFound("Lesson not found.");
+            }
+
+            // Verify user is enrolled in the course
+            var isEnrolled = await _courseService.IsUserEnrolledAsync(lesson.Module!.CourseId, userId);
+            if (!isEnrolled)
+            {
+                return Forbid();
+            }
+
             var lessonProgress = await _context.LessonProgresses
                 .FirstOrDefaultAsync(p => p.LessonId == request.LessonId && p.UserId == userId);
 
@@ -113,11 +143,6 @@ namespace Learnly.Controllers
         [HttpPost("lessons/{lessonId}")]
         public async Task<IActionResult> PostProgress(int lessonId, [FromBody] LessonProgressDto progressDto)
         {
-            if (!User.Identity.IsAuthenticated)
-            {
-                return Unauthorized();
-            }
-
             var userId = _userManager.GetUserId(User);
 
             if (string.IsNullOrEmpty(userId))
@@ -130,6 +155,13 @@ namespace Learnly.Controllers
             if (lesson == null || lesson.Module == null || lesson.Module.Course == null)
             {
                 return BadRequest("Lesson, Module, or Course not found for the given lesson ID.");
+            }
+
+            // Verify user is enrolled in the course
+            var isEnrolled = await _courseService.IsUserEnrolledAsync(lesson.Module.CourseId, userId);
+            if (!isEnrolled)
+            {
+                return Forbid();
             }
 
             var lessonProgress = await _context.LessonProgresses

@@ -116,18 +116,149 @@
         </header>
     }
     <div class="container-fluid">
-        <main role="main" class="pb-3">
+        <main role="main">
             @RenderBody()
         </main>
     </div>
 
     @if (ViewData["HideNavFooter"] == null || !(bool)ViewData["HideNavFooter"])
     {
-        <footer class="border-top footer text-muted">
-            <div class="container-fluid">
-                &copy; 2025 - Learnly
+        <footer class="footer-main mt-auto">
+            <div class="footer-top py-5">
+                <div class="container">
+                    <div class="row g-4">
+                        <div class="col-lg-4 col-md-6">
+                            <div class="footer-brand mb-3">
+                                <a href="/" class="d-flex align-items-center text-decoration-none">
+                                    <i class="bi bi-mortarboard-fill text-white me-2" style="font-size: 1.75rem;"></i>
+                                    <span class="fw-bold text-white" style="font-size: 1.5rem;">Learnly</span>
+                                </a>
+                            </div>
+                            <p class="text-white-50 mb-3">
+                                Empowering learners worldwide with quality education. Start your learning journey today and unlock your potential.
+                            </p>
+                            <div class="social-links">
+                                <a href="#" class="social-link me-2"><i class="bi bi-facebook"></i></a>
+                                <a href="#" class="social-link me-2"><i class="bi bi-twitter-x"></i></a>
+                                <a href="#" class="social-link me-2"><i class="bi bi-linkedin"></i></a>
+                                <a href="#" class="social-link me-2"><i class="bi bi-youtube"></i></a>
+                                <a href="#" class="social-link"><i class="bi bi-instagram"></i></a>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-6">
+                            <h6 class="text-white fw-bold mb-3">Explore</h6>
+                            <ul class="list-unstyled footer-links">
+                                <li><a asp-page="/Courses/Index">Browse Courses</a></li>
+                                <li><a asp-controller="Home" asp-action="Index">Home</a></li>
+                                @if (User.Identity != null && User.Identity.IsAuthenticated)
+                                {
+                                    <li><a asp-controller="Dashboard" asp-action="Index">Dashboard</a></li>
+                                }
+                            </ul>
+                        </div>
+                        <div class="col-lg-2 col-md-6">
+                            <h6 class="text-white fw-bold mb-3">Get Started</h6>
+                            <ul class="list-unstyled footer-links">
+                                @if (User.Identity == null || !User.Identity.IsAuthenticated)
+                                {
+                                    <li><a asp-area="Identity" asp-page="/Account/RegisterStudent">Sign Up</a></li>
+                                    <li><a asp-area="Identity" asp-page="/Account/Login">Log In</a></li>
+                                    <li><a asp-area="Identity" asp-page="/Account/RegisterInstructor">Become Instructor</a></li>
+                                }
+                                else
+                                {
+                                    <li><a asp-controller="Account" asp-action="Manage">My Account</a></li>
+                                    <li><a asp-page="/Courses/Enrolled">My Courses</a></li>
+                                }
+                            </ul>
+                        </div>
+                        <div class="col-lg-4 col-md-6">
+                            <h6 class="text-white fw-bold mb-3">Contact Us</h6>
+                            <ul class="list-unstyled footer-contact">
+                                <li class="d-flex align-items-start mb-2">
+                                    <i class="bi bi-envelope me-2 mt-1"></i>
+                                    <span>support@learnly.com</span>
+                                </li>
+                                <li class="d-flex align-items-start mb-2">
+                                    <i class="bi bi-geo-alt me-2 mt-1"></i>
+                                    <span>123 Learning Street, Education City</span>
+                                </li>
+                                <li class="d-flex align-items-start">
+                                    <i class="bi bi-telephone me-2 mt-1"></i>
+                                    <span>+1 (555) 123-4567</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom py-3">
+                <div class="container">
+                    <div class="row align-items-center">
+                        <div class="col-md-6 text-center text-md-start">
+                            <span class="text-white-50 small">&copy; @DateTime.Now.Year Learnly. All rights reserved.</span>
+                        </div>
+                        <div class="col-md-6 text-center text-md-end mt-2 mt-md-0">
+                            <a href="#" class="footer-bottom-link">Privacy Policy</a>
+                            <span class="text-white-50 mx-2">|</span>
+                            <a href="#" class="footer-bottom-link">Terms of Service</a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </footer>
+
+        <style>
+            .footer-main {
+                background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            }
+            .footer-top {
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            .social-link {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.1);
+                color: #fff;
+                text-decoration: none;
+                transition: all 0.3s ease;
+            }
+            .social-link:hover {
+                background: var(--bs-primary);
+                color: #fff;
+                transform: translateY(-3px);
+            }
+            .footer-links li {
+                margin-bottom: 0.5rem;
+            }
+            .footer-links a {
+                color: rgba(255, 255, 255, 0.6);
+                text-decoration: none;
+                transition: color 0.3s ease;
+            }
+            .footer-links a:hover {
+                color: #fff;
+            }
+            .footer-contact {
+                color: rgba(255, 255, 255, 0.6);
+            }
+            .footer-contact i {
+                color: var(--bs-primary);
+            }
+            .footer-bottom-link {
+                color: rgba(255, 255, 255, 0.6);
+                text-decoration: none;
+                font-size: 0.875rem;
+                transition: color 0.3s ease;
+            }
+            .footer-bottom-link:hover {
+                color: #fff;
+            }
+        </style>
     }
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
