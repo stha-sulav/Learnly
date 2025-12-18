@@ -38,13 +38,10 @@ namespace Learnly.Controllers
             {
                 model.CancelReturnUrl = Url.Action("Index", "Admin");
             }
-            else if (User.IsInRole(Roles.Instructor))
+            else
             {
-                model.CancelReturnUrl = Url.Action("Index", "Instructor");
-            }
-            else // Default for regular users or if no specific role matched
-            {
-                model.CancelReturnUrl = Url.Action("MyCourses", "Home"); // Assuming MyCourses is a common student landing
+                // Both Instructors and Students use Dashboard as their home page
+                model.CancelReturnUrl = Url.Action("Index", "Dashboard");
             }
 
             return View(model);
@@ -167,18 +164,15 @@ namespace Learnly.Controllers
         // Helper method to populate ViewModel data, avoiding duplication
         private async Task<ManageAccountViewModel> PopulateViewModelWithUserData(ManageAccountViewModel model, ApplicationUser user)
         {
-            // Populate CancelReturnUrl
+            // Populate CancelReturnUrl based on user's role
             if (User.IsInRole(Roles.Admin))
             {
                 model.CancelReturnUrl = Url.Action("Index", "Admin");
             }
-            else if (User.IsInRole(Roles.Instructor))
-            {
-                model.CancelReturnUrl = Url.Action("Index", "Instructor");
-            }
             else
             {
-                model.CancelReturnUrl = Url.Action("MyCourses", "Home");
+                // Both Instructors and Students use Dashboard as their home page
+                model.CancelReturnUrl = Url.Action("Index", "Dashboard");
             }
 
             // Always ensure ProfilePicturePath is up-to-date, especially after a potential profile update
