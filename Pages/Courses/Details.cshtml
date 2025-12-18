@@ -47,6 +47,33 @@ else
                     }
                 </div>
 
+                <!-- Reviews Summary -->
+                <div class="d-flex align-items-center mb-4">
+                    <div class="me-3">
+                        <span class="display-6 fw-bold text-primary">@Model.Course.AverageRating.ToString("0.0")</span>
+                    </div>
+                    <div>
+                        <div class="text-warning mb-1">
+                            @for (int i = 1; i <= 5; i++)
+                            {
+                                if (i <= Math.Floor(Model.Course.AverageRating))
+                                {
+                                    <i class="bi bi-star-fill"></i>
+                                }
+                                else if (i - 0.5 <= Model.Course.AverageRating)
+                                {
+                                    <i class="bi bi-star-half"></i>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-star"></i>
+                                }
+                            }
+                        </div>
+                        <small class="text-muted">@Model.Course.TotalReviews review(s)</small>
+                    </div>
+                </div>
+
                 <h2 class="mt-5 mb-3">Course Curriculum</h2>
                 <div class="accordion" id="courseModulesAccordion">
                     @foreach (var module in Model.Course.Modules.OrderBy(m => m.Order))
@@ -100,6 +127,115 @@ else
                                     </ul>
                                 </div>
                             </div>
+                        </div>
+                    }
+                </div>
+
+                <!-- Reviews Section -->
+                <h2 class="mt-5 mb-3"><i class="bi bi-chat-square-text me-2"></i>Reviews</h2>
+
+                @if (Model.Course.IsEnrolled)
+                {
+                    <div class="card shadow-sm mb-4" id="review-form-card">
+                        <div class="card-body">
+                            @if (Model.Course.CurrentUserReview != null)
+                            {
+                                <h5 class="card-title mb-3">Your Review</h5>
+                                <div id="user-review-display">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div class="text-warning" id="user-rating-display">
+                                            @for (int i = 1; i <= 5; i++)
+                                            {
+                                                <i class="bi @(i <= Model.Course.CurrentUserReview.Rating ? "bi-star-fill" : "bi-star")"></i>
+                                            }
+                                        </div>
+                                        <div>
+                                            <button class="btn btn-sm btn-outline-primary me-1" id="edit-review-btn">
+                                                <i class="bi bi-pencil"></i> Edit
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" id="delete-review-btn">
+                                                <i class="bi bi-trash"></i> Delete
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <p class="mb-0 text-muted" id="user-comment-display">@(Model.Course.CurrentUserReview.Comment ?? "No comment provided.")</p>
+                                </div>
+                                <div id="edit-review-form" style="display: none;">
+                                    <div class="mb-3">
+                                        <label class="form-label">Rating</label>
+                                        <div class="star-rating" id="edit-star-rating">
+                                            @for (int i = 1; i <= 5; i++)
+                                            {
+                                                <i class="bi bi-star star-input" data-rating="@i" style="font-size: 1.5rem; cursor: pointer;"></i>
+                                            }
+                                        </div>
+                                        <input type="hidden" id="edit-rating-value" value="@Model.Course.CurrentUserReview.Rating">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="edit-review-comment" class="form-label">Comment (Optional)</label>
+                                        <textarea class="form-control" id="edit-review-comment" rows="3" maxlength="1000">@Model.Course.CurrentUserReview.Comment</textarea>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-primary" id="save-review-btn">Save Changes</button>
+                                        <button class="btn btn-outline-secondary" id="cancel-edit-btn">Cancel</button>
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <h5 class="card-title mb-3">Write a Review</h5>
+                                <div class="mb-3">
+                                    <label class="form-label">Rating</label>
+                                    <div class="star-rating" id="new-star-rating">
+                                        @for (int i = 1; i <= 5; i++)
+                                        {
+                                            <i class="bi bi-star star-input" data-rating="@i" style="font-size: 1.5rem; cursor: pointer;"></i>
+                                        }
+                                    </div>
+                                    <input type="hidden" id="new-rating-value" value="0">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="new-review-comment" class="form-label">Comment (Optional)</label>
+                                    <textarea class="form-control" id="new-review-comment" rows="3" maxlength="1000" placeholder="Share your experience with this course..."></textarea>
+                                </div>
+                                <button class="btn btn-primary" id="submit-review-btn">Submit Review</button>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <div id="reviews-list">
+                    @if (Model.Course.Reviews.Any())
+                    {
+                        @foreach (var review in Model.Course.Reviews.Where(r => !r.IsCurrentUserReview))
+                        {
+                            <div class="card shadow-sm mb-3">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div>
+                                            <strong>@review.UserName</strong>
+                                            <div class="text-warning">
+                                                @for (int i = 1; i <= 5; i++)
+                                                {
+                                                    <i class="bi @(i <= review.Rating ? "bi-star-fill" : "bi-star")" style="font-size: 0.85rem;"></i>
+                                                }
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">@review.CreatedAt.ToString("MMM dd, yyyy")</small>
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(review.Comment))
+                                    {
+                                        <p class="mb-0 text-muted">@review.Comment</p>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+                    else if (!Model.Course.IsEnrolled || Model.Course.CurrentUserReview == null)
+                    {
+                        <div class="text-muted text-center py-4">
+                            <i class="bi bi-chat-square-text" style="font-size: 2rem;"></i>
+                            <p class="mt-2 mb-0">No reviews yet. Be the first to review this course!</p>
                         </div>
                     }
                 </div>
@@ -219,6 +355,184 @@ else
                     } catch (error) {
                         console.error('Error:', error);
                         showAlert('An error occurred during enrollment.', 'error');
+                    }
+                });
+            }
+
+            // Review functionality
+            const courseId = @Model.Course.Id;
+            const csrfToken = document.querySelector('meta[name="RequestVerificationToken"]')?.content;
+            const userReviewId = @(Model.Course.CurrentUserReview?.Id ?? 0);
+
+            // Star rating functionality
+            function setupStarRating(containerId, inputId) {
+                const container = document.getElementById(containerId);
+                const input = document.getElementById(inputId);
+                if (!container || !input) return;
+
+                const stars = container.querySelectorAll('.star-input');
+                const initialRating = parseInt(input.value) || 0;
+
+                // Set initial state
+                updateStars(stars, initialRating);
+
+                stars.forEach(star => {
+                    star.addEventListener('mouseenter', function() {
+                        const rating = parseInt(this.dataset.rating);
+                        updateStars(stars, rating);
+                    });
+
+                    star.addEventListener('mouseleave', function() {
+                        const currentRating = parseInt(input.value) || 0;
+                        updateStars(stars, currentRating);
+                    });
+
+                    star.addEventListener('click', function() {
+                        const rating = parseInt(this.dataset.rating);
+                        input.value = rating;
+                        updateStars(stars, rating);
+                    });
+                });
+            }
+
+            function updateStars(stars, rating) {
+                stars.forEach(star => {
+                    const starRating = parseInt(star.dataset.rating);
+                    if (starRating <= rating) {
+                        star.classList.remove('bi-star');
+                        star.classList.add('bi-star-fill');
+                        star.style.color = '#ffc107';
+                    } else {
+                        star.classList.remove('bi-star-fill');
+                        star.classList.add('bi-star');
+                        star.style.color = '#6c757d';
+                    }
+                });
+            }
+
+            // Initialize star ratings
+            setupStarRating('new-star-rating', 'new-rating-value');
+            setupStarRating('edit-star-rating', 'edit-rating-value');
+
+            // Submit new review
+            const submitBtn = document.getElementById('submit-review-btn');
+            if (submitBtn) {
+                submitBtn.addEventListener('click', async function() {
+                    const rating = parseInt(document.getElementById('new-rating-value').value);
+                    const comment = document.getElementById('new-review-comment').value.trim();
+
+                    if (rating < 1 || rating > 5) {
+                        showAlert('Please select a rating between 1 and 5 stars.', 'warning');
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch('/api/review', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'RequestVerificationToken': csrfToken
+                            },
+                            body: JSON.stringify({ courseId, rating, comment: comment || null })
+                        });
+
+                        if (response.ok) {
+                            showAlert('Review submitted successfully!', 'success');
+                            setTimeout(() => location.reload(), 1500);
+                        } else if (response.status === 409) {
+                            showAlert('You have already reviewed this course.', 'info');
+                        } else {
+                            const error = await response.json();
+                            showAlert(error.message || 'Failed to submit review.', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        showAlert('An error occurred while submitting the review.', 'error');
+                    }
+                });
+            }
+
+            // Edit review functionality
+            const editBtn = document.getElementById('edit-review-btn');
+            const cancelEditBtn = document.getElementById('cancel-edit-btn');
+            const saveBtn = document.getElementById('save-review-btn');
+            const deleteBtn = document.getElementById('delete-review-btn');
+            const reviewDisplay = document.getElementById('user-review-display');
+            const editForm = document.getElementById('edit-review-form');
+
+            if (editBtn) {
+                editBtn.addEventListener('click', function() {
+                    reviewDisplay.style.display = 'none';
+                    editForm.style.display = 'block';
+                    // Re-initialize stars with current value
+                    const currentRating = parseInt(document.getElementById('edit-rating-value').value);
+                    updateStars(document.querySelectorAll('#edit-star-rating .star-input'), currentRating);
+                });
+            }
+
+            if (cancelEditBtn) {
+                cancelEditBtn.addEventListener('click', function() {
+                    editForm.style.display = 'none';
+                    reviewDisplay.style.display = 'block';
+                });
+            }
+
+            if (saveBtn) {
+                saveBtn.addEventListener('click', async function() {
+                    const rating = parseInt(document.getElementById('edit-rating-value').value);
+                    const comment = document.getElementById('edit-review-comment').value.trim();
+
+                    if (rating < 1 || rating > 5) {
+                        showAlert('Please select a rating between 1 and 5 stars.', 'warning');
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch(`/api/review/${userReviewId}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'RequestVerificationToken': csrfToken
+                            },
+                            body: JSON.stringify({ rating, comment: comment || null })
+                        });
+
+                        if (response.ok) {
+                            showAlert('Review updated successfully!', 'success');
+                            setTimeout(() => location.reload(), 1500);
+                        } else {
+                            showAlert('Failed to update review.', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        showAlert('An error occurred while updating the review.', 'error');
+                    }
+                });
+            }
+
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', async function() {
+                    if (!confirm('Are you sure you want to delete your review?')) {
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch(`/api/review/${userReviewId}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'RequestVerificationToken': csrfToken
+                            }
+                        });
+
+                        if (response.ok) {
+                            showAlert('Review deleted successfully!', 'success');
+                            setTimeout(() => location.reload(), 1500);
+                        } else {
+                            showAlert('Failed to delete review.', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        showAlert('An error occurred while deleting the review.', 'error');
                     }
                 });
             }

@@ -35,5 +35,6 @@ namespace Learnly.Models
 
         public ICollection<Module> Modules { get; set; } = new HashSet<Module>();
         public ICollection<Enrollment> Enrollments { get; set; } = new HashSet<Enrollment>();
+        public ICollection<Review> Reviews { get; set; } = new HashSet<Review>();
     }
 }

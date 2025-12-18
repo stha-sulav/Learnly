@@ -142,6 +142,35 @@
                                             </span>
                                         }
 
+                                        <!-- Rating -->
+                                        <div class="mb-2">
+                                            @if (course.TotalReviews > 0)
+                                            {
+                                                <span class="text-warning">
+                                                    @for (int i = 1; i <= 5; i++)
+                                                    {
+                                                        if (i <= Math.Floor(course.AverageRating))
+                                                        {
+                                                            <i class="bi bi-star-fill" style="font-size: 0.85rem;"></i>
+                                                        }
+                                                        else if (i - 0.5 <= course.AverageRating)
+                                                        {
+                                                            <i class="bi bi-star-half" style="font-size: 0.85rem;"></i>
+                                                        }
+                                                        else
+                                                        {
+                                                            <i class="bi bi-star" style="font-size: 0.85rem;"></i>
+                                                        }
+                                                    }
+                                                </span>
+                                                <span class="text-muted small ms-1">@course.AverageRating.ToString("0.0") (@course.TotalReviews)</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted small"><i class="bi bi-star me-1"></i>No reviews yet</span>
+                                            }
+                                        </div>
+
                                         <p class="card-text text-muted small flex-grow-1">@course.ShortDescription</p>
 
                                         <!-- Stats Row -->

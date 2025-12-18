@@ -36,6 +36,13 @@ namespace Learnly.Pages.Courses
                 return NotFound();
             }
 
+            // Load reviews for the course
+            var reviews = await _courseService.GetCourseReviewsAsync(id, userId);
+            Course.Reviews = reviews.Reviews;
+            Course.AverageRating = reviews.AverageRating;
+            Course.TotalReviews = reviews.TotalReviews;
+            Course.CurrentUserReview = reviews.CurrentUserReview;
+
             return Page();
         }
     }

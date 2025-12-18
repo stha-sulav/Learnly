@@ -9,5 +9,9 @@ namespace Learnly.ViewModels
         public int ProgressPercent { get; set; }
         public int? FirstIncompleteLessonId { get; set; }
         public string? FirstIncompleteLessonTitle { get; set; }
+
+        // Rating information
+        public double AverageRating { get; set; }
+        public int TotalReviews { get; set; }
     }
 }

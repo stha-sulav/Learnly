@@ -21,5 +21,9 @@ namespace Learnly.ViewModels
         public int EnrolledStudents { get; set; }
         public string? CategoryName { get; set; }
         public DateTime CreatedAt { get; set; }
+
+        // Rating information
+        public double AverageRating { get; set; }
+        public int TotalReviews { get; set; }
     }
 }

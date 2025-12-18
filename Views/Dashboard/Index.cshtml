@@ -138,6 +138,33 @@
                                         @(course.IsPublished ? "Published" : "Draft")
                                     </span>
                                 </div>
+                                <div class="mb-2">
+                                    @if (course.TotalReviews > 0)
+                                    {
+                                        <span class="text-warning">
+                                            @for (int i = 1; i <= 5; i++)
+                                            {
+                                                if (i <= Math.Floor(course.AverageRating))
+                                                {
+                                                    <i class="bi bi-star-fill" style="font-size: 0.85rem;"></i>
+                                                }
+                                                else if (i - 0.5 <= course.AverageRating)
+                                                {
+                                                    <i class="bi bi-star-half" style="font-size: 0.85rem;"></i>
+                                                }
+                                                else
+                                                {
+                                                    <i class="bi bi-star" style="font-size: 0.85rem;"></i>
+                                                }
+                                            }
+                                        </span>
+                                        <span class="text-muted small ms-1">@course.AverageRating.ToString("0.0") (@course.TotalReviews)</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small"><i class="bi bi-star me-1"></i>No reviews yet</span>
+                                    }
+                                </div>
                                 <p class="card-text text-muted small flex-grow-1">@course.ShortDescription</p>
                                 <div class="d-flex justify-content-between text-muted small mb-3 border-top pt-2">
                                     <span><i class="bi bi-collection me-1"></i>@course.ModuleCount Modules</span>
@@ -284,6 +311,33 @@
                             </div>
                             <div class="card-body d-flex flex-column">
                                 <h5 class="card-title">@course.Title</h5>
+                                <div class="mb-2">
+                                    @if (course.TotalReviews > 0)
+                                    {
+                                        <span class="text-warning">
+                                            @for (int i = 1; i <= 5; i++)
+                                            {
+                                                if (i <= Math.Floor(course.AverageRating))
+                                                {
+                                                    <i class="bi bi-star-fill" style="font-size: 0.85rem;"></i>
+                                                }
+                                                else if (i - 0.5 <= course.AverageRating)
+                                                {
+                                                    <i class="bi bi-star-half" style="font-size: 0.85rem;"></i>
+                                                }
+                                                else
+                                                {
+                                                    <i class="bi bi-star" style="font-size: 0.85rem;"></i>
+                                                }
+                                            }
+                                        </span>
+                                        <span class="text-muted small ms-1">@course.AverageRating.ToString("0.0") (@course.TotalReviews)</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small"><i class="bi bi-star me-1"></i>No reviews yet</span>
+                                    }
+                                </div>
                                 <div class="progress mb-2" style="height: 20px;">
                                     <div class="progress-bar bg-primary" role="progressbar" style="width: @(course.ProgressPercent)%;" aria-valuenow="@course.ProgressPercent" aria-valuemin="0" aria-valuemax="100">
                                         @course.ProgressPercent%

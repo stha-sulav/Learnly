@@ -1,6 +1,8 @@
 using Learnly.Data;
+using Learnly.Hubs;
 using Learnly.Models;
 using Learnly.ViewModels;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -12,10 +14,12 @@ namespace Learnly.Services
     public class CourseService : ICourseService
     {
         private readonly ApplicationDbContext _context;
+        private readonly IHubContext<NotificationHub> _notificationHub;
 
-        public CourseService(ApplicationDbContext context)
+        public CourseService(ApplicationDbContext context, IHubContext<NotificationHub> notificationHub)
         {
             _context = context;
+            _notificationHub = notificationHub;
         }
 
         public async Task<IEnumerable<CourseSummaryVm>> GetPublicCourseSummaries()
@@ -37,7 +41,10 @@ namespace Learnly.Services
                     LessonCount = c.Modules.SelectMany(m => m.Lessons).Count(),
                     EnrolledStudents = c.Enrollments.Count,
                     CategoryName = c.Category != null ? c.Category.Name : null,
-                    CreatedAt = c.CreatedAt
+                    CreatedAt = c.CreatedAt,
+                    // Rating information
+                    AverageRating = c.Reviews.Any() ? c.Reviews.Average(r => r.Rating) : 0,
+                    TotalReviews = c.Reviews.Count
                 })
                 .OrderByDescending(c => c.CreatedAt)
                 .ToListAsync();
@@ -71,7 +78,10 @@ namespace Learnly.Services
                     LessonCount = c.Modules.SelectMany(m => m.Lessons).Count(),
                     EnrolledStudents = c.Enrollments.Count,
                     CategoryName = c.Category != null ? c.Category.Name : null,
-                    CreatedAt = c.CreatedAt
+                    CreatedAt = c.CreatedAt,
+                    // Rating information
+                    AverageRating = c.Reviews.Any() ? c.Reviews.Average(r => r.Rating) : 0,
+                    TotalReviews = c.Reviews.Count
                 })
                 .OrderByDescending(c => c.CreatedAt)
                 .ToListAsync();
@@ -435,6 +445,8 @@ namespace Learnly.Services
                 .Include(e => e.Course)
                     .ThenInclude(c => c.Modules)
                         .ThenInclude(m => m.Lessons)
+                .Include(e => e.Course)
+                    .ThenInclude(c => c.Reviews)
                 .Select(e => e.Course)
                 .ToListAsync();
 
@@ -490,7 +502,10 @@ namespace Learnly.Services
                     ThumbnailPath = course.ThumbnailPath ?? string.Empty,
                     ProgressPercent = progressPercent,
                     FirstIncompleteLessonId = firstIncompleteLessonId,
-                    FirstIncompleteLessonTitle = firstIncompleteLessonTitle
+                    FirstIncompleteLessonTitle = firstIncompleteLessonTitle,
+                    // Rating information
+                    AverageRating = course.Reviews.Any() ? course.Reviews.Average(r => r.Rating) : 0,
+                    TotalReviews = course.Reviews.Count
                 });
             }
 
@@ -521,7 +536,10 @@ namespace Learnly.Services
                     LessonCount = c.Modules.SelectMany(m => m.Lessons).Count(),
                     EnrolledStudents = c.Enrollments.Count,
                     CategoryName = c.Category != null ? c.Category.Name : null,
-                    CreatedAt = c.CreatedAt
+                    CreatedAt = c.CreatedAt,
+                    // Rating information
+                    AverageRating = c.Reviews.Any() ? c.Reviews.Average(r => r.Rating) : 0,
+                    TotalReviews = c.Reviews.Count
                 })
                 .OrderByDescending(c => c.CreatedAt)
                 .ToListAsync();
@@ -548,7 +566,10 @@ namespace Learnly.Services
                     LessonCount = c.Modules.SelectMany(m => m.Lessons).Count(),
                     EnrolledStudents = c.Enrollments.Count,
                     CategoryName = c.Category != null ? c.Category.Name : null,
-                    CreatedAt = c.CreatedAt
+                    CreatedAt = c.CreatedAt,
+                    // Rating information
+                    AverageRating = c.Reviews.Any() ? c.Reviews.Average(r => r.Rating) : 0,
+                    TotalReviews = c.Reviews.Count
                 })
                 .ToListAsync();
         }
@@ -596,6 +617,175 @@ namespace Learnly.Services
             slug = slug.Trim('-');
 
             return slug;
+        }
+
+        // Review methods
+        public async Task<CourseReviewsVm> GetCourseReviewsAsync(int courseId, string? userId)
+        {
+            var reviews = await _context.Reviews
+                .Where(r => r.CourseId == courseId)
+                .Include(r => r.User)
+                .OrderByDescending(r => r.CreatedAt)
+                .Select(r => new ReviewVm
+                {
+                    Id = r.Id,
+                    UserId = r.UserId,
+                    UserName = r.User.DisplayName ?? r.User.UserName ?? "Anonymous",
+                    Rating = r.Rating,
+                    Comment = r.Comment,
+                    CreatedAt = r.CreatedAt,
+                    IsCurrentUserReview = r.UserId == userId
+                })
+                .ToListAsync();
+
+            var averageRating = reviews.Any() ? reviews.Average(r => r.Rating) : 0;
+            var currentUserReview = !string.IsNullOrEmpty(userId)
+                ? reviews.FirstOrDefault(r => r.UserId == userId)
+                : null;
+
+            return new CourseReviewsVm
+            {
+                Reviews = reviews,
+                AverageRating = Math.Round(averageRating, 1),
+                TotalReviews = reviews.Count,
+                CurrentUserReview = currentUserReview
+            };
+        }
+
+        public async Task<ReviewVm> CreateReviewAsync(int courseId, string userId, int rating, string? comment)
+        {
+            // Check if user already has a review for this course
+            var existingReview = await _context.Reviews
+                .FirstOrDefaultAsync(r => r.CourseId == courseId && r.UserId == userId);
+
+            if (existingReview != null)
+            {
+                throw new InvalidOperationException("You have already reviewed this course.");
+            }
+
+            // Get the course with instructor info for notification
+            var course = await _context.Courses
+                .Include(c => c.Instructor)
+                .FirstOrDefaultAsync(c => c.Id == courseId);
+
+            var review = new Review
+            {
+                CourseId = courseId,
+                UserId = userId,
+                Rating = rating,
+                Comment = comment,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Reviews.Add(review);
+            await _context.SaveChangesAsync();
+
+            var user = await _context.Users.FindAsync(userId);
+            var reviewerName = user?.DisplayName ?? user?.UserName ?? "A student";
+
+            // Send notification to the instructor
+            if (course?.InstructorId != null && course.InstructorId != userId)
+            {
+                var notification = new Notification
+                {
+                    UserId = course.InstructorId,
+                    Title = "New Course Review",
+                    Body = $"{reviewerName} left a {rating}-star review on \"{course.Title}\"",
+                    Url = $"/Courses/Details/{courseId}",
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.Notifications.Add(notification);
+                await _context.SaveChangesAsync();
+
+                // Send real-time notification via SignalR
+                await _notificationHub.Clients.User(course.InstructorId).SendAsync("ReceiveNotification", new
+                {
+                    id = notification.Id,
+                    title = notification.Title,
+                    body = notification.Body,
+                    url = notification.Url,
+                    createdAt = notification.CreatedAt
+                });
+            }
+
+            return new ReviewVm
+            {
+                Id = review.Id,
+                UserId = review.UserId,
+                UserName = reviewerName,
+                Rating = review.Rating,
+                Comment = review.Comment,
+                CreatedAt = review.CreatedAt,
+                IsCurrentUserReview = true
+            };
+        }
+
+        public async Task<ReviewVm?> UpdateReviewAsync(int reviewId, string userId, int rating, string? comment)
+        {
+            var review = await _context.Reviews
+                .Include(r => r.User)
+                .FirstOrDefaultAsync(r => r.Id == reviewId && r.UserId == userId);
+
+            if (review == null)
+            {
+                return null;
+            }
+
+            review.Rating = rating;
+            review.Comment = comment;
+            review.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            return new ReviewVm
+            {
+                Id = review.Id,
+                UserId = review.UserId,
+                UserName = review.User?.DisplayName ?? review.User?.UserName ?? "Anonymous",
+                Rating = review.Rating,
+                Comment = review.Comment,
+                CreatedAt = review.CreatedAt,
+                IsCurrentUserReview = true
+            };
+        }
+
+        public async Task<bool> DeleteReviewAsync(int reviewId, string userId)
+        {
+            var review = await _context.Reviews
+                .FirstOrDefaultAsync(r => r.Id == reviewId && r.UserId == userId);
+
+            if (review == null)
+            {
+                return false;
+            }
+
+            _context.Reviews.Remove(review);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<ReviewVm?> GetUserReviewForCourseAsync(int courseId, string userId)
+        {
+            var review = await _context.Reviews
+                .Include(r => r.User)
+                .FirstOrDefaultAsync(r => r.CourseId == courseId && r.UserId == userId);
+
+            if (review == null)
+            {
+                return null;
+            }
+
+            return new ReviewVm
+            {
+                Id = review.Id,
+                UserId = review.UserId,
+                UserName = review.User?.DisplayName ?? review.User?.UserName ?? "Anonymous",
+                Rating = review.Rating,
+                Comment = review.Comment,
+                CreatedAt = review.CreatedAt,
+                IsCurrentUserReview = true
+            };
         }
     }
 }

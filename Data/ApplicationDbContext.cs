@@ -23,6 +23,7 @@ namespace Learnly.Data
         public DbSet<Quiz> Quizzes { get; set; }
         public DbSet<Question> Questions { get; set; }
         public DbSet<Attempt> Attempts { get; set; }
+        public DbSet<Review> Reviews { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder builder)
@@ -156,6 +157,24 @@ namespace Learnly.Data
                 .WithMany(q => q.Attempts)
                 .HasForeignKey(a => a.QuizId)
                 .OnDelete(DeleteBehavior.NoAction);
+
+            // Review relationships
+            builder.Entity<Review>()
+                .HasOne(r => r.User)
+                .WithMany()
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            builder.Entity<Review>()
+                .HasOne(r => r.Course)
+                .WithMany(c => c.Reviews)
+                .HasForeignKey(r => r.CourseId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            // Ensure one review per user per course
+            builder.Entity<Review>()
+                .HasIndex(r => new { r.UserId, r.CourseId })
+                .IsUnique();
         }
     }
 }

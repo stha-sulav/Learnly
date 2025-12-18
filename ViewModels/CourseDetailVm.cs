@@ -33,6 +33,12 @@ namespace Learnly.ViewModels
         public DateTime CreatedAt { get; set; }
         public string? CategoryName { get; set; }
 
+        // Review information
+        public double AverageRating { get; set; }
+        public int TotalReviews { get; set; }
+        public List<ReviewVm> Reviews { get; set; } = new List<ReviewVm>();
+        public ReviewVm? CurrentUserReview { get; set; }
+
         // Computed properties
         public string TotalDurationFormatted
         {

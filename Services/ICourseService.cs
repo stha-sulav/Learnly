@@ -22,5 +22,12 @@ namespace Learnly.Services
         Task<IEnumerable<CourseSummaryVm>> GetInstructorCourseSummaries(string instructorId); // New
         Task<IEnumerable<CourseSummaryVm>> GetFeaturedCoursesAsync(int count);
         Task<PlatformStatsDto> GetPlatformStatsAsync();
+
+        // Review methods
+        Task<CourseReviewsVm> GetCourseReviewsAsync(int courseId, string? userId);
+        Task<ReviewVm> CreateReviewAsync(int courseId, string userId, int rating, string? comment);
+        Task<ReviewVm?> UpdateReviewAsync(int reviewId, string userId, int rating, string? comment);
+        Task<bool> DeleteReviewAsync(int reviewId, string userId);
+        Task<ReviewVm?> GetUserReviewForCourseAsync(int courseId, string userId);
     }
 }
