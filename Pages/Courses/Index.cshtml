@@ -41,8 +41,19 @@
                                 <label for="CategoryId" class="form-label">
                                     <i class="bi bi-tag me-1"></i>Category
                                 </label>
-                                <select class="form-select" id="CategoryId" name="CategoryId" asp-items="Model.Categories">
+                                <select class="form-select" id="CategoryId" name="CategoryId">
                                     <option value="">All Categories</option>
+                                    @foreach (var item in Model.Categories)
+                                    {
+                                        if (item.Value == Model.CategoryId?.ToString())
+                                        {
+                                            <option value="@item.Value" selected>@item.Text</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@item.Value">@item.Text</option>
+                                        }
+                                    }
                                 </select>
                             </div>
                             <div class="mb-3">

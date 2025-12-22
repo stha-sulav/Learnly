@@ -329,7 +329,6 @@
         border: 1px solid var(--bs-border-color);
         border-radius: 8px;
         margin-bottom: 1rem;
-        overflow: hidden;
     }
     .modules-tree .module-header {
         background: linear-gradient(135deg, var(--bs-gray-100) 0%, var(--bs-gray-200) 100%);
@@ -339,6 +338,10 @@
         align-items: center;
         justify-content: space-between;
         transition: background-color 0.2s;
+        border-radius: 8px 8px 0 0;
+    }
+    .modules-tree .module-header.collapsed {
+        border-radius: 8px;
     }
     .modules-tree .module-header:hover {
         background: linear-gradient(135deg, var(--bs-gray-200) 0%, var(--bs-gray-300) 100%);
@@ -387,6 +390,7 @@
     .modules-tree .module-body {
         border-top: 1px solid var(--bs-border-color);
         padding: 0;
+        border-radius: 0 0 8px 8px;
     }
     .modules-tree .lessons-list {
         list-style: none;

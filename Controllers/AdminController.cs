@@ -120,17 +120,22 @@ namespace Learnly.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditUser(string id, ManageAccountViewModel model)
         {
-            if (id != model.Email) // Assuming Email is unique and used as ID for simplicity here, though it's better to use actual User.Id
+            if (id != model.UserId)
             {
                 return NotFound();
             }
+
+            // Remove password validation for admin edit (password fields not shown)
+            ModelState.Remove("OldPassword");
+            ModelState.Remove("NewPassword");
+            ModelState.Remove("ConfirmNewPassword");
 
             if (!ModelState.IsValid)
             {
                 return View(model);
             }
 
-            var user = await _userManager.FindByEmailAsync(model.Email);
+            var user = await _userManager.FindByIdAsync(id);
             if (user == null)
             {
                 return NotFound();

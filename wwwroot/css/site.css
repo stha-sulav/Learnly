@@ -789,7 +789,6 @@ body:has(.learn-container) footer {
 .filter-sidebar .card {
     border: 1px solid var(--bs-border-color);
     border-radius: 0.5rem;
-    overflow: hidden;
 }
 
 .filter-sidebar .card-header {
@@ -799,6 +798,7 @@ body:has(.learn-container) footer {
     font-weight: 600;
     font-size: 0.9rem;
     color: var(--bs-body-color);
+    border-radius: 0.5rem 0.5rem 0 0;
 }
 
 .filter-sidebar .card-header i {

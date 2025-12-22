@@ -18,7 +18,9 @@
       "Bash(powershell -Command:*)",
       "Bash(dir \"C:\\\\Users\\\\SulavShrestha\\\\Developer\\\\Learnly\\\\Views\")",
       "Bash(dir \"C:\\\\Users\\\\SulavShrestha\\\\Developer\\\\Learnly\\\\Views\\\\Instructor\")",
-      "Bash(Select-String -Pattern \"error\")"
+      "Bash(Select-String -Pattern \"error\")",
+      "Bash(dotnet ef dbcontext script:*)",
+      "Bash(sqlcmd:*)"
     ]
   }
 }

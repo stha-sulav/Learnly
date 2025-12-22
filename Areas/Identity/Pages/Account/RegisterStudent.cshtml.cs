@@ -98,6 +98,13 @@ namespace Learnly.Areas.Identity.Pages.Account
                             return RedirectToPage("RegisterConfirmation", new { email = StudentInput.Email, returnUrl });
                         }
 
+                        // Check if current user is an admin creating this account
+                        if (User.Identity?.IsAuthenticated == true && User.IsInRole(Learnly.Constants.Roles.Admin))
+                        {
+                            // Admin created this user - redirect back to admin users page
+                            return RedirectToAction("Users", "Admin");
+                        }
+
                         await _signInManager.SignInAsync(user, isPersistent: false);
                         return LocalRedirect(returnUrl);
                     }

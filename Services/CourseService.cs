@@ -32,7 +32,10 @@ namespace Learnly.Services
                     Title = c.Title,
                     Slug = c.Slug,
                     ThumbnailPath = c.ThumbnailPath ?? string.Empty,
-                    InstructorName = c.Instructor!.DisplayName ?? "Unknown Instructor",
+                    InstructorName = c.Instructor.DisplayName
+                        ?? ((c.Instructor.FirstName != null ? c.Instructor.FirstName + " " + c.Instructor.LastName : null)
+                        ?? c.Instructor.UserName
+                        ?? "Unknown Instructor"),
                     ShortDescription = c.Description != null && c.Description.Length > 150 ? c.Description.Substring(0, 150) + "..." : c.Description ?? string.Empty,
                     ProgressPercent = null,
                     IsPublished = c.IsPublished,
@@ -70,7 +73,10 @@ namespace Learnly.Services
                     Title = c.Title,
                     Slug = c.Slug,
                     ThumbnailPath = c.ThumbnailPath ?? string.Empty,
-                    InstructorName = c.Instructor!.DisplayName ?? "Unknown Instructor",
+                    InstructorName = c.Instructor.DisplayName
+                        ?? ((c.Instructor.FirstName != null ? c.Instructor.FirstName + " " + c.Instructor.LastName : null)
+                        ?? c.Instructor.UserName
+                        ?? "Unknown Instructor"),
                     ShortDescription = c.Description != null && c.Description.Length > 150 ? c.Description.Substring(0, 150) + "..." : c.Description ?? string.Empty,
                     ProgressPercent = null,
                     IsPublished = c.IsPublished,
@@ -563,7 +569,10 @@ namespace Learnly.Services
                     Title = c.Title,
                     Slug = c.Slug,
                     ThumbnailPath = c.ThumbnailPath ?? string.Empty,
-                    InstructorName = c.Instructor!.DisplayName ?? "Unknown Instructor",
+                    InstructorName = c.Instructor.DisplayName
+                        ?? ((c.Instructor.FirstName != null ? c.Instructor.FirstName + " " + c.Instructor.LastName : null)
+                        ?? c.Instructor.UserName
+                        ?? "Unknown Instructor"),
                     ShortDescription = c.Description != null && c.Description.Length > 150 ? c.Description.Substring(0, 150) + "..." : c.Description ?? string.Empty,
                     ProgressPercent = null,
                     IsPublished = c.IsPublished,
@@ -666,7 +675,10 @@ namespace Learnly.Services
                     Title = c.Title,
                     Slug = c.Slug,
                     ThumbnailPath = c.ThumbnailPath ?? string.Empty,
-                    InstructorName = c.Instructor!.DisplayName ?? "Unknown Instructor",
+                    InstructorName = c.Instructor.DisplayName
+                        ?? ((c.Instructor.FirstName != null ? c.Instructor.FirstName + " " + c.Instructor.LastName : null)
+                        ?? c.Instructor.UserName
+                        ?? "Unknown Instructor"),
                     ShortDescription = c.Description != null && c.Description.Length > 150 ? c.Description.Substring(0, 150) + "..." : c.Description ?? string.Empty,
                     ProgressPercent = null, // Not applicable for instructor view
                     IsPublished = c.IsPublished,
@@ -697,7 +709,10 @@ namespace Learnly.Services
                     Title = c.Title,
                     Slug = c.Slug,
                     ThumbnailPath = c.ThumbnailPath ?? string.Empty,
-                    InstructorName = c.Instructor!.DisplayName ?? "Unknown Instructor",
+                    InstructorName = c.Instructor.DisplayName
+                        ?? ((c.Instructor.FirstName != null ? c.Instructor.FirstName + " " + c.Instructor.LastName : null)
+                        ?? c.Instructor.UserName
+                        ?? "Unknown Instructor"),
                     ShortDescription = c.Description != null && c.Description.Length > 150 ? c.Description.Substring(0, 150) + "..." : c.Description ?? string.Empty,
                     ProgressPercent = null,
                     IsPublished = c.IsPublished,
