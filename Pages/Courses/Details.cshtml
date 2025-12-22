@@ -78,10 +78,15 @@ else
                 <div class="accordion" id="courseModulesAccordion">
                     @foreach (var module in Model.Course.Modules.OrderBy(m => m.Order))
                     {
-                        <div class="accordion-item">
+                        var isFirstAccessibleModule = module.Order == 1 || !module.IsLocked;
+                        <div class="accordion-item @(module.IsLocked ? "opacity-75" : "")">
                             <h2 class="accordion-header" id="heading-@module.Id">
                                 <button class="accordion-button @(module.Order == 1 ? "" : "collapsed")" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-@module.Id" aria-expanded="@(module.Order == 1 ? "true" : "false")" aria-controls="collapse-@module.Id">
-                                    @if (!string.IsNullOrEmpty(module.ThumbnailPath))
+                                    @if (module.IsLocked)
+                                    {
+                                        <i class="bi bi-lock-fill text-muted me-2"></i>
+                                    }
+                                    else if (!string.IsNullOrEmpty(module.ThumbnailPath))
                                     {
                                         <img src="@module.ThumbnailPath" alt="@module.Title" class="me-2 rounded" style="width: 40px; height: 30px; object-fit: cover;">
                                     }
@@ -91,17 +96,35 @@ else
                                             <i class="bi bi-layers text-white"></i>
                                         </div>
                                     }
-                                    @module.Order. @module.Title
+                                    <span class="flex-grow-1">@module.Order. @module.Title</span>
+                                    @if (module.HasQuiz)
+                                    {
+                                        @if (module.IsQuizPassed)
+                                        {
+                                            <span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>Quiz Passed</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning text-dark ms-2"><i class="bi bi-question-circle me-1"></i>Quiz Required</span>
+                                        }
+                                    }
                                 </button>
                             </h2>
                             <div id="collapse-@module.Id" class="accordion-collapse collapse @(module.Order == 1 ? "show" : "")" aria-labelledby="heading-@module.Id" data-bs-parent="#courseModulesAccordion">
                                 <div class="accordion-body">
+                                    @if (module.IsLocked)
+                                    {
+                                        <div class="alert alert-secondary mb-3">
+                                            <i class="bi bi-lock me-2"></i>
+                                            Complete the previous module's quiz to unlock this content.
+                                        </div>
+                                    }
                                     <ul class="list-group list-group-flush">
                                         @foreach (var lesson in module.Lessons.OrderBy(l => l.Order))
                                         {
-                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            <li class="list-group-item d-flex justify-content-between align-items-center @(module.IsLocked ? "text-muted" : "")">
                                                 <div class="d-flex align-items-center">
-                                                    @if (!string.IsNullOrEmpty(lesson.ThumbnailPath))
+                                                    @if (!string.IsNullOrEmpty(lesson.ThumbnailPath) && !module.IsLocked)
                                                     {
                                                         <img src="@lesson.ThumbnailPath" alt="@lesson.Title" class="me-2 rounded" style="width: 32px; height: 24px; object-fit: cover;">
                                                     }
@@ -111,13 +134,51 @@ else
                                                             <i class="bi bi-book text-white" style="font-size: 0.75rem;"></i>
                                                         </div>
                                                     }
-                                                    <a href="/Lessons/View/@lesson.Id" class="text-decoration-none @(lesson.IsCompleted ? "text-success" : "")">
-                                                        @lesson.Order. @lesson.Title
-                                                    </a>
+                                                    @if (module.IsLocked)
+                                                    {
+                                                        <span class="text-muted">@lesson.Order. @lesson.Title</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <a href="/Lessons/View/@lesson.Id" class="text-decoration-none @(lesson.IsCompleted ? "text-success" : "")">
+                                                            @lesson.Order. @lesson.Title
+                                                        </a>
+                                                    }
                                                 </div>
                                                 <div>
                                                     <span class="badge bg-secondary me-2">@TimeSpan.FromSeconds(lesson.DurationSeconds).ToString(@"mm\:ss")</span>
                                                     @if (lesson.IsCompleted)
+                                                    {
+                                                        <i class="bi bi-check-circle-fill text-success"></i>
+                                                    }
+                                                </div>
+                                            </li>
+                                        }
+                                        @if (module.HasQuiz)
+                                        {
+                                            <li class="list-group-item d-flex justify-content-between align-items-center @(module.IsLocked ? "text-muted" : "")">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="bg-primary rounded d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 24px;">
+                                                        <i class="bi bi-question-circle text-white" style="font-size: 0.75rem;"></i>
+                                                    </div>
+                                                    @if (module.IsLocked)
+                                                    {
+                                                        <span class="text-muted">Quiz: Module Assessment</span>
+                                                    }
+                                                    else if (Model.Course.IsEnrolled)
+                                                    {
+                                                        <a href="/Quiz/Take/@module.Id" class="text-decoration-none @(module.IsQuizPassed ? "text-success" : "")">
+                                                            Quiz: Module Assessment
+                                                        </a>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">Quiz: Module Assessment</span>
+                                                    }
+                                                </div>
+                                                <div>
+                                                    <span class="badge bg-primary me-2">Quiz</span>
+                                                    @if (module.IsQuizPassed)
                                                     {
                                                         <i class="bi bi-check-circle-fill text-success"></i>
                                                     }

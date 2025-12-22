@@ -277,7 +277,56 @@ namespace Learnly.Controllers
                 return Forbid("You are not authorized to delete this course.");
             }
 
-            // First, delete all modules and their lessons (with files)
+            // Get all lesson IDs for this course first
+            var lessonIds = await _context.Lessons
+                .Where(l => l.Module.CourseId == id)
+                .Select(l => l.Id)
+                .ToListAsync();
+
+            // Get all quiz IDs for this course's modules
+            var quizIds = await _context.Quizzes
+                .Where(q => q.Module.CourseId == id)
+                .Select(q => q.Id)
+                .ToListAsync();
+
+            // Delete all quiz attempts for quizzes in this course
+            var attempts = await _context.Attempts
+                .Where(a => quizIds.Contains(a.QuizId))
+                .ToListAsync();
+            _context.Attempts.RemoveRange(attempts);
+
+            // Delete all lesson progresses for lessons in this course
+            var lessonProgresses = await _context.LessonProgresses
+                .Where(lp => lessonIds.Contains(lp.LessonId))
+                .ToListAsync();
+            _context.LessonProgresses.RemoveRange(lessonProgresses);
+
+            // Delete all comments and their likes for lessons in this course
+            var lessonComments = await _context.Comments.Where(c => c.LessonId.HasValue && lessonIds.Contains(c.LessonId.Value)).ToListAsync();
+            var lessonCommentIds = lessonComments.Select(c => c.Id).ToList();
+            var lessonCommentLikes = await _context.CommentLikes.Where(cl => lessonCommentIds.Contains(cl.CommentId)).ToListAsync();
+            _context.CommentLikes.RemoveRange(lessonCommentLikes);
+            _context.Comments.RemoveRange(lessonComments);
+
+            // Delete all reviews for this course
+            var reviews = await _context.Reviews.Where(r => r.CourseId == id).ToListAsync();
+            _context.Reviews.RemoveRange(reviews);
+
+            // Delete all comments and their likes for this course
+            var courseComments = await _context.Comments.Where(c => c.CourseId == id).ToListAsync();
+            var courseCommentIds = courseComments.Select(c => c.Id).ToList();
+            var courseCommentLikes = await _context.CommentLikes.Where(cl => courseCommentIds.Contains(cl.CommentId)).ToListAsync();
+            _context.CommentLikes.RemoveRange(courseCommentLikes);
+            _context.Comments.RemoveRange(courseComments);
+
+            // Delete all enrollments for this course
+            var enrollments = await _context.Enrollments.Where(e => e.CourseId == id).ToListAsync();
+            _context.Enrollments.RemoveRange(enrollments);
+
+            // Save all the deletions of related data first
+            await _context.SaveChangesAsync();
+
+            // Now delete all modules and their lessons (with files)
             var modules = await _moduleService.GetModulesByCourseAsync(id);
             foreach (var module in modules)
             {
@@ -332,20 +381,6 @@ namespace Learnly.Controllers
                     System.IO.File.Delete(courseThumbnailPath);
                 }
             }
-
-            // Delete all enrollments for this course
-            var enrollments = await _context.Enrollments.Where(e => e.CourseId == id).ToListAsync();
-            _context.Enrollments.RemoveRange(enrollments);
-
-            // Delete all lesson progresses for lessons in this course
-            var lessonIds = await _context.Lessons
-                .Where(l => l.Module.CourseId == id)
-                .Select(l => l.Id)
-                .ToListAsync();
-            var lessonProgresses = await _context.LessonProgresses
-                .Where(lp => lessonIds.Contains(lp.LessonId))
-                .ToListAsync();
-            _context.LessonProgresses.RemoveRange(lessonProgresses);
 
             _context.Courses.Remove(course);
             await _context.SaveChangesAsync();

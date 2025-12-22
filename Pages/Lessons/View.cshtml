@@ -40,7 +40,7 @@ else
             <!-- Main Content Area -->
             <div class="learn-main">
                 <!-- Video/Content Container -->
-                <div class="video-container">
+                <div class="video-container" id="lesson-content-container">
                     @if (Model.Lesson.ContentType == Learnly.Models.ContentType.Video)
                     {
                         <div class="ratio ratio-16x9 w-100">
@@ -56,6 +56,53 @@ else
                         </div>
                     }
                 </div>
+
+                <!-- Quiz Container (hidden by default) -->
+                <div class="quiz-container" id="quiz-container" style="display: none;">
+                    <div class="quiz-wrapper p-4">
+                        <div id="quiz-content">
+                            <!-- Quiz questions will be loaded here -->
+                        </div>
+                        <div id="quiz-result" style="display: none;">
+                            <!-- Quiz results will be shown here -->
+                        </div>
+                    </div>
+                </div>
+
+                <style>
+                    .quiz-container {
+                        background: #f8f9fa;
+                        min-height: 400px;
+                        max-height: 80vh;
+                        overflow-y: auto;
+                    }
+                    .quiz-wrapper {
+                        max-width: 800px;
+                        margin: 0 auto;
+                    }
+                    .quiz-container .card {
+                        border: 1px solid #dee2e6;
+                        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+                    }
+                    .quiz-container .form-check {
+                        padding: 0.5rem 0 0.5rem 1.75rem;
+                        margin-bottom: 0;
+                    }
+                    .quiz-container .form-check:hover {
+                        background-color: #e9ecef;
+                        border-radius: 4px;
+                    }
+                    .quiz-container .form-check-input {
+                        cursor: pointer;
+                    }
+                    .quiz-container .form-check-label {
+                        cursor: pointer;
+                        width: 100%;
+                    }
+                    #quiz-result {
+                        min-height: 300px;
+                    }
+                </style>
 
                 <!-- Lesson Info Panel -->
                 <div class="lesson-info">
@@ -113,7 +160,14 @@ else
                             <div></div>
                         }
 
-                        @if (Model.Lesson.NextLessonId != null)
+                        @if (Model.Lesson.IsLastLessonInModule && Model.Lesson.HasQuiz && !Model.Lesson.IsQuizPassed)
+                        {
+                            <!-- Last lesson in module with unpassed quiz - show Take Quiz -->
+                            <button type="button" class="btn btn-nav-next btn-primary" id="take-quiz-btn" data-module-id="@Model.Lesson.ModuleId">
+                                <i class="bi bi-pencil-square me-1"></i> Take Quiz
+                            </button>
+                        }
+                        else if (Model.Lesson.NextLessonId != null)
                         {
                             <a href="/Lessons/View/@Model.Lesson.NextLessonId" class="btn btn-nav-next">
                                 Next <i class="bi bi-chevron-right ms-1"></i>
@@ -140,44 +194,94 @@ else
                         {
                             var moduleProgress = module.Lessons.Count(l => l.IsCompleted);
                             var isCurrentModule = module.Id == Model.Lesson.ModuleId;
-                            <div class="accordion-item">
+                            <div class="accordion-item @(module.IsLocked ? "opacity-50" : "")">
                                 <h2 class="accordion-header">
                                     <button class="accordion-button @(isCurrentModule ? "" : "collapsed")" type="button"
                                             data-bs-toggle="collapse" data-bs-target="#module-@module.Id">
                                         <div class="d-flex flex-column flex-grow-1 me-2">
-                                            <span class="module-title">Section @module.Order: @module.Title</span>
-                                            <span class="module-progress">@moduleProgress / @module.Lessons.Count completed</span>
+                                            <span class="module-title">
+                                                @if (module.IsLocked)
+                                                {
+                                                    <i class="bi bi-lock-fill text-muted me-1"></i>
+                                                }
+                                                Section @module.Order: @module.Title
+                                            </span>
+                                            <span class="module-progress">
+                                                @if (module.HasQuiz)
+                                                {
+                                                    @if (module.IsQuizPassed)
+                                                    {
+                                                        <span class="text-success"><i class="bi bi-check-circle me-1"></i>Quiz Passed</span>
+                                                    }
+                                                    else if (!module.IsLocked)
+                                                    {
+                                                        <span class="text-warning"><i class="bi bi-question-circle me-1"></i>Quiz Required</span>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <span>@moduleProgress / @module.Lessons.Count completed</span>
+                                                }
+                                            </span>
                                         </div>
                                     </button>
                                 </h2>
                                 <div id="module-@module.Id" class="accordion-collapse collapse @(isCurrentModule ? "show" : "")">
                                     <div class="accordion-body p-0">
-                                        <ul class="lesson-list">
-                                            @foreach (var lesson in module.Lessons)
-                                            {
-                                                var isCurrentLesson = lesson.Id == Model.Lesson.Id;
-                                                <li class="lesson-item @(isCurrentLesson ? "active" : "") @(lesson.IsCompleted && !isCurrentLesson ? "completed" : "")">
-                                                    <a href="/Lessons/View/@lesson.Id">
-                                                        <span class="lesson-status">
-                                                            @if (lesson.IsCompleted)
-                                                            {
-                                                                <i class="bi bi-check-circle-fill text-success"></i>
-                                                            }
-                                                            else if (isCurrentLesson)
-                                                            {
-                                                                <i class="bi bi-play-circle-fill text-primary"></i>
-                                                            }
-                                                            else
-                                                            {
-                                                                <i class="bi bi-circle text-muted"></i>
-                                                            }
-                                                        </span>
-                                                        <span class="lesson-title">@lesson.Order. @lesson.Title</span>
-                                                        <span class="lesson-duration">@TimeSpan.FromSeconds(lesson.DurationSeconds).ToString(@"m\:ss")</span>
-                                                    </a>
-                                                </li>
-                                            }
-                                        </ul>
+                                        @if (module.IsLocked)
+                                        {
+                                            <div class="p-3 text-muted small">
+                                                <i class="bi bi-lock me-1"></i>Complete the previous module's quiz to unlock.
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <ul class="lesson-list">
+                                                @foreach (var lesson in module.Lessons)
+                                                {
+                                                    var isCurrentLesson = lesson.Id == Model.Lesson.Id;
+                                                    <li class="lesson-item @(isCurrentLesson ? "active" : "") @(lesson.IsCompleted && !isCurrentLesson ? "completed" : "")">
+                                                        <a href="/Lessons/View/@lesson.Id">
+                                                            <span class="lesson-status">
+                                                                @if (lesson.IsCompleted)
+                                                                {
+                                                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                                                }
+                                                                else if (isCurrentLesson)
+                                                                {
+                                                                    <i class="bi bi-play-circle-fill text-primary"></i>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <i class="bi bi-circle text-muted"></i>
+                                                                }
+                                                            </span>
+                                                            <span class="lesson-title">@lesson.Order. @lesson.Title</span>
+                                                            <span class="lesson-duration">@TimeSpan.FromSeconds(lesson.DurationSeconds).ToString(@"m\:ss")</span>
+                                                        </a>
+                                                    </li>
+                                                }
+                                                @if (module.HasQuiz)
+                                                {
+                                                    <li class="lesson-item @(module.IsQuizPassed ? "completed" : "")">
+                                                        <a href="javascript:void(0)" class="sidebar-quiz-link" data-module-id="@module.Id">
+                                                            <span class="lesson-status">
+                                                                @if (module.IsQuizPassed)
+                                                                {
+                                                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <i class="bi bi-question-circle text-primary"></i>
+                                                                }
+                                                            </span>
+                                                            <span class="lesson-title">Quiz</span>
+                                                            <span class="lesson-duration badge bg-primary" style="font-size: 0.65rem;">Quiz</span>
+                                                        </a>
+                                                    </li>
+                                                }
+                                            </ul>
+                                        }
                                     </div>
                                 </div>
                             </div>
@@ -237,6 +341,25 @@ else
                                             </a>
                                         </li>
                                     }
+                                    @if (module.HasQuiz)
+                                    {
+                                        <li class="lesson-item @(module.IsQuizPassed ? "completed" : "")">
+                                            <a href="javascript:void(0)" class="sidebar-quiz-link" data-module-id="@module.Id" data-bs-dismiss="offcanvas">
+                                                <span class="lesson-status">
+                                                    @if (module.IsQuizPassed)
+                                                    {
+                                                        <i class="bi bi-check-circle-fill text-success"></i>
+                                                    }
+                                                    else
+                                                    {
+                                                        <i class="bi bi-question-circle text-primary"></i>
+                                                    }
+                                                </span>
+                                                <span class="lesson-title">Quiz</span>
+                                                <span class="lesson-duration badge bg-primary" style="font-size: 0.65rem;">Quiz</span>
+                                            </a>
+                                        </li>
+                                    }
                                 </ul>
                             </div>
                         </div>
@@ -249,4 +372,324 @@ else
 
 @section Scripts {
     <script src="~/js/lesson-player.js"></script>
+    <script>
+        (function() {
+            let currentAttemptId = null;
+            let currentQuizId = null;
+
+            // Handle Take Quiz button click
+            const takeQuizBtn = document.getElementById('take-quiz-btn');
+            if (takeQuizBtn) {
+                takeQuizBtn.addEventListener('click', function() {
+                    const moduleId = this.dataset.moduleId;
+                    loadQuiz(moduleId);
+                });
+            }
+
+            // Handle sidebar quiz links
+            document.querySelectorAll('.sidebar-quiz-link').forEach(link => {
+                link.addEventListener('click', function() {
+                    const moduleId = this.dataset.moduleId;
+                    loadQuiz(moduleId);
+                });
+            });
+
+            async function loadQuiz(moduleId) {
+                try {
+                    // Fetch quiz data
+                    const response = await fetch(`/api/Quiz/ByModule/${moduleId}`);
+                    if (!response.ok) {
+                        throw new Error('Failed to load quiz');
+                    }
+                    const quiz = await response.json();
+                    currentQuizId = quiz.id;
+
+                    // Start attempt
+                    const attemptResponse = await fetch(`/api/Quiz/StartAttempt/${quiz.id}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    if (!attemptResponse.ok) {
+                        throw new Error('Failed to start quiz attempt');
+                    }
+                    const attemptData = await attemptResponse.json();
+                    currentAttemptId = attemptData.attemptId;
+
+                    // Render quiz
+                    renderQuiz(quiz);
+
+                    // Show quiz container, hide lesson content
+                    document.getElementById('lesson-content-container').style.display = 'none';
+                    document.getElementById('quiz-container').style.display = 'block';
+                    document.getElementById('quiz-content').style.display = 'block';
+                    document.getElementById('quiz-result').style.display = 'none';
+
+                    // Scroll to top of quiz
+                    document.getElementById('quiz-container').scrollIntoView({ behavior: 'smooth' });
+
+                } catch (error) {
+                    console.error('Error loading quiz:', error);
+                    alert('Failed to load quiz. Please try again.');
+                }
+            }
+
+            function renderQuiz(quiz) {
+                const container = document.getElementById('quiz-content');
+
+                let html = `
+                    <div class="quiz-header mb-4">
+                        <h3><i class="bi bi-question-circle me-2"></i>${escapeHtml(quiz.title)}</h3>
+                        <p class="text-muted mb-2">Module: ${escapeHtml(quiz.moduleTitle || '')}</p>
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            You need to score at least <strong>70%</strong> to pass this quiz and unlock the next module.
+                        </div>
+                    </div>
+                    <form id="quiz-form">
+                `;
+
+                quiz.questions.forEach((question, i) => {
+                    html += `
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">Question ${i + 1}: ${escapeHtml(question.text)}</h5>
+                                <input type="hidden" name="answers[${i}].questionId" value="${question.id}" />
+                    `;
+
+                    if (question.type === 'MultipleChoice') {
+                        question.options.forEach((option, j) => {
+                            html += `
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="answers[${i}].selectedOptions"
+                                           id="option_${i}_${j}" value="${escapeHtml(option)}">
+                                    <label class="form-check-label" for="option_${i}_${j}">
+                                        ${escapeHtml(option)}
+                                    </label>
+                                </div>
+                            `;
+                        });
+                    } else if (question.type === 'MultipleSelect') {
+                        question.options.forEach((option, j) => {
+                            html += `
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="answers[${i}].selectedOptions"
+                                           id="option_${i}_${j}" value="${escapeHtml(option)}">
+                                    <label class="form-check-label" for="option_${i}_${j}">
+                                        ${escapeHtml(option)}
+                                    </label>
+                                </div>
+                            `;
+                        });
+                    } else if (question.type === 'ShortAnswer') {
+                        html += `
+                            <div class="form-group">
+                                <input type="text" class="form-control" name="answers[${i}].answer" placeholder="Your answer...">
+                            </div>
+                        `;
+                    }
+
+                    html += `
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `
+                    </form>
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="button" class="btn btn-secondary" id="back-to-lesson-btn">
+                            <i class="bi bi-arrow-left me-1"></i> Back to Lesson
+                        </button>
+                        <button type="button" class="btn btn-primary" id="submit-quiz-btn">
+                            <i class="bi bi-check-circle me-1"></i> Submit Quiz
+                        </button>
+                    </div>
+                `;
+
+                container.innerHTML = html;
+
+                // Add event listeners
+                document.getElementById('back-to-lesson-btn').addEventListener('click', backToLesson);
+                document.getElementById('submit-quiz-btn').addEventListener('click', submitQuiz);
+            }
+
+            function backToLesson() {
+                document.getElementById('lesson-content-container').style.display = 'block';
+                document.getElementById('quiz-container').style.display = 'none';
+            }
+
+            async function submitQuiz() {
+                const form = document.getElementById('quiz-form');
+                const formData = new FormData(form);
+
+                // Build answers array
+                const answers = [];
+                const answerMap = {};
+
+                for (const [key, value] of formData.entries()) {
+                    const match = key.match(/answers\[(\d+)\]\.(\w+)/);
+                    if (match) {
+                        const index = parseInt(match[1]);
+                        const field = match[2];
+
+                        if (!answerMap[index]) {
+                            answerMap[index] = { questionId: 0, selectedOptions: [], answer: '' };
+                        }
+
+                        if (field === 'questionId') {
+                            answerMap[index].questionId = parseInt(value);
+                        } else if (field === 'selectedOptions') {
+                            answerMap[index].selectedOptions.push(value);
+                        } else if (field === 'answer') {
+                            answerMap[index].answer = value;
+                        }
+                    }
+                }
+
+                // Convert to array
+                for (const key in answerMap) {
+                    answers.push(answerMap[key]);
+                }
+
+                const submission = {
+                    attemptId: currentAttemptId,
+                    answers: answers
+                };
+
+                try {
+                    const submitBtn = document.getElementById('submit-quiz-btn');
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Submitting...';
+
+                    const response = await fetch('/api/Quiz/Submit', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(submission)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to submit quiz');
+                    }
+
+                    const result = await response.json();
+                    showResult(result);
+
+                } catch (error) {
+                    console.error('Error submitting quiz:', error);
+                    alert('Failed to submit quiz. Please try again.');
+
+                    const submitBtn = document.getElementById('submit-quiz-btn');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i> Submit Quiz';
+                }
+            }
+
+            function showResult(result) {
+                document.getElementById('quiz-content').style.display = 'none';
+                document.getElementById('quiz-result').style.display = 'block';
+
+                const resultContainer = document.getElementById('quiz-result');
+                const passed = result.passed;
+                const score = result.score.toFixed(1);
+
+                let html = `
+                    <div class="text-center py-4">
+                        <div class="mb-4">
+                            ${passed
+                                ? '<i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>'
+                                : '<i class="bi bi-x-circle-fill text-danger" style="font-size: 4rem;"></i>'}
+                        </div>
+                        <h2 class="${passed ? 'text-success' : 'text-danger'}">
+                            ${passed ? 'Congratulations! You Passed!' : 'Quiz Not Passed'}
+                        </h2>
+                        <p class="lead mb-4">Your Score: <strong>${score}%</strong> (Passing: ${result.passingScore}%)</p>
+                `;
+
+                if (passed && result.unlocksNextModule) {
+                    html += `
+                        <div class="alert alert-success">
+                            <i class="bi bi-unlock me-2"></i>
+                            You've unlocked the next module: <strong>${escapeHtml(result.nextModuleTitle || 'Next Module')}</strong>
+                        </div>
+                    `;
+                }
+
+                if (result.questionFeedbacks && result.questionFeedbacks.length > 0) {
+                    html += `
+                        <div class="text-start mt-4">
+                            <h5>Question Feedback:</h5>
+                            <ul class="list-group">
+                    `;
+                    result.questionFeedbacks.forEach((fb, i) => {
+                        const isCorrect = fb.earnedPoints >= fb.possiblePoints;
+                        html += `
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>Question ${i + 1}: ${escapeHtml(fb.message)}</span>
+                                <span class="badge ${isCorrect ? 'bg-success' : 'bg-danger'}">
+                                    ${fb.earnedPoints}/${fb.possiblePoints}
+                                </span>
+                            </li>
+                        `;
+                    });
+                    html += `
+                            </ul>
+                        </div>
+                    `;
+                }
+
+                html += `
+                        <div class="mt-4 d-flex gap-2 justify-content-center">
+                            <button type="button" class="btn btn-secondary" id="back-to-lesson-result-btn">
+                                <i class="bi bi-arrow-left me-1"></i> Back to Lesson
+                            </button>
+                `;
+
+                if (!passed) {
+                    html += `
+                            <button type="button" class="btn btn-primary" id="retry-quiz-btn" data-module-id="${result.moduleId}">
+                                <i class="bi bi-arrow-clockwise me-1"></i> Try Again
+                            </button>
+                    `;
+                } else if (result.unlocksNextModule && result.nextModuleId) {
+                    html += `
+                            <a href="/Courses/Details/@Model.Lesson?.CourseId" class="btn btn-primary">
+                                <i class="bi bi-arrow-right me-1"></i> Continue Course
+                            </a>
+                    `;
+                }
+
+                html += `
+                        </div>
+                    </div>
+                `;
+
+                resultContainer.innerHTML = html;
+
+                // Add event listeners
+                document.getElementById('back-to-lesson-result-btn').addEventListener('click', function() {
+                    if (passed) {
+                        // Reload page to update UI state
+                        window.location.reload();
+                    } else {
+                        backToLesson();
+                        document.getElementById('quiz-result').style.display = 'none';
+                    }
+                });
+
+                const retryBtn = document.getElementById('retry-quiz-btn');
+                if (retryBtn) {
+                    retryBtn.addEventListener('click', function() {
+                        loadQuiz(this.dataset.moduleId);
+                    });
+                }
+            }
+
+            function escapeHtml(text) {
+                if (!text) return '';
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+        })();
+    </script>
 }

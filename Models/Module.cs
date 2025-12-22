@@ -21,5 +21,8 @@ namespace Learnly.Models
         public string? ThumbnailPath { get; set; }
 
         public ICollection<Lesson> Lessons { get; set; } = new HashSet<Lesson>();
+
+        // One-to-one optional relationship with Quiz
+        public Quiz? Quiz { get; set; }
     }
 }

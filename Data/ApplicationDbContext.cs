@@ -132,12 +132,17 @@ namespace Learnly.Data
                 .HasForeignKey(n => n.UserId)
                 .OnDelete(DeleteBehavior.NoAction);
 
-            // Quiz relationships
+            // Quiz relationships - One-to-one with Module
             builder.Entity<Quiz>()
-                .HasOne(q => q.Lesson)
-                .WithMany()
-                .HasForeignKey(q => q.LessonId)
+                .HasOne(q => q.Module)
+                .WithOne(m => m.Quiz)
+                .HasForeignKey<Quiz>(q => q.ModuleId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // Ensure one quiz per module (unique constraint)
+            builder.Entity<Quiz>()
+                .HasIndex(q => q.ModuleId)
+                .IsUnique();
 
             builder.Entity<Quiz>()
                 .HasMany(q => q.Questions)

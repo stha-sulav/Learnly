@@ -148,11 +148,22 @@
                         <div class="col-lg-2 col-md-6">
                             <h6 class="text-white fw-bold mb-3">Explore</h6>
                             <ul class="list-unstyled footer-links">
-                                <li><a asp-page="/Courses/Index">Browse Courses</a></li>
                                 <li><a asp-controller="Home" asp-action="Index">Home</a></li>
+                                @if (User.Identity == null || !User.Identity.IsAuthenticated || User.IsInRole("User"))
+                                {
+                                    <li><a asp-page="/Courses/Index">Browse Courses</a></li>
+                                }
                                 @if (User.Identity != null && User.Identity.IsAuthenticated)
                                 {
                                     <li><a asp-controller="Dashboard" asp-action="Index">Dashboard</a></li>
+                                }
+                                @if (User.IsInRole("Instructor"))
+                                {
+                                    <li><a asp-area="Instructor" asp-page="/Courses/CourseList">My Courses</a></li>
+                                }
+                                @if (User.IsInRole("Admin"))
+                                {
+                                    <li><a asp-area="Admin" asp-page="/Index">Admin Panel</a></li>
                                 }
                             </ul>
                         </div>
@@ -165,10 +176,19 @@
                                     <li><a asp-area="Identity" asp-page="/Account/Login">Log In</a></li>
                                     <li><a asp-area="Identity" asp-page="/Account/RegisterInstructor">Become Instructor</a></li>
                                 }
-                                else
+                                else if (User.IsInRole("User"))
                                 {
                                     <li><a asp-controller="Account" asp-action="Manage">My Account</a></li>
-                                    <li><a asp-page="/Courses/Enrolled">My Courses</a></li>
+                                    <li><a asp-page="/Courses/Enrolled">My Learning</a></li>
+                                }
+                                else if (User.IsInRole("Instructor"))
+                                {
+                                    <li><a asp-controller="Account" asp-action="Manage">My Account</a></li>
+                                    <li><a asp-area="Instructor" asp-page="/Courses/CourseEdit">Create Course</a></li>
+                                }
+                                else if (User.IsInRole("Admin"))
+                                {
+                                    <li><a asp-controller="Account" asp-action="Manage">My Account</a></li>
                                 }
                             </ul>
                         </div>

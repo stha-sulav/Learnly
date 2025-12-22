@@ -1,0 +1,48 @@
+@model Learnly.ViewModels.QuizEditViewModel
+@{
+    ViewData["Title"] = "Create Quiz";
+}
+
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/Instructor/Courses/CourseList">Courses</a></li>
+            <li class="breadcrumb-item"><a href="/Instructor/Quiz/Manage/@Model.ModuleId">Quiz Management</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Create</li>
+        </ol>
+    </nav>
+
+    <h1 class="mb-4">Create Quiz</h1>
+    <p class="text-muted">Module: @Model.ModuleTitle</p>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="ModuleId" />
+
+                <div class="mb-3">
+                    <label asp-for="Title" class="form-label">Quiz Title <span class="text-danger">*</span></label>
+                    <input asp-for="Title" class="form-control" placeholder="e.g., Module 1 Assessment" />
+                    <span asp-validation-for="Title" class="text-danger"></span>
+                </div>
+
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    The passing score is fixed at 70%. Students must score at least 70% to pass and unlock the next module.
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-1"></i>Create Quiz
+                    </button>
+                    <a href="/Instructor/Quiz/Manage/@Model.ModuleId" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

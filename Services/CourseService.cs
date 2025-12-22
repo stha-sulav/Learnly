@@ -94,6 +94,8 @@ namespace Learnly.Services
                 .Include(c => c.Instructor)
                 .Include(c => c.Modules)
                     .ThenInclude(m => m.Lessons)
+                .Include(c => c.Modules)
+                    .ThenInclude(m => m.Quiz)
                 .AsQueryable();
 
             var course = await courseQuery.FirstOrDefaultAsync();
@@ -123,6 +125,62 @@ namespace Learnly.Services
                     .ToHashSetAsync();
             }
 
+            // Get quiz pass status for each module
+            var moduleQuizPassStatus = new Dictionary<int, bool>();
+            if (isEnrolled && !string.IsNullOrEmpty(userId))
+            {
+                foreach (var module in course.Modules.Where(m => m.Quiz != null))
+                {
+                    var passed = await _context.Attempts
+                        .AnyAsync(a => a.QuizId == module.Quiz!.Id
+                                    && a.UserId == userId
+                                    && a.IsGraded
+                                    && a.Score >= Quiz.FixedPassingScore);
+                    moduleQuizPassStatus[module.Id] = passed;
+                }
+            }
+
+            // Build modules list with lock status
+            var orderedModules = course.Modules.OrderBy(m => m.OrderIndex).ToList();
+            var moduleVms = new List<ModuleVm>();
+            bool previousModulePassed = true;
+
+            foreach (var m in orderedModules)
+            {
+                var hasQuiz = m.Quiz != null;
+                var isQuizPassed = hasQuiz && moduleQuizPassStatus.GetValueOrDefault(m.Id, false);
+                var isLocked = !previousModulePassed;
+
+                moduleVms.Add(new ModuleVm
+                {
+                    Id = m.Id,
+                    Title = m.Title,
+                    Order = m.OrderIndex,
+                    ThumbnailPath = m.ThumbnailPath,
+                    HasQuiz = hasQuiz,
+                    QuizId = m.Quiz?.Id,
+                    IsQuizPassed = isQuizPassed,
+                    IsLocked = isLocked,
+                    Lessons = m.Lessons.OrderBy(l => l.OrderIndex).Select(l => new LessonVm
+                    {
+                        Id = l.Id,
+                        Title = l.Title,
+                        ContentType = l.ContentType,
+                        DurationSeconds = l.DurationSeconds,
+                        Order = l.OrderIndex,
+                        IsCompleted = completedLessonIds.Contains(l.Id),
+                        ThumbnailPath = l.ThumbnailPath
+                    }).ToList()
+                });
+
+                // Update previousModulePassed for next iteration
+                if (hasQuiz)
+                {
+                    previousModulePassed = isQuizPassed;
+                }
+                // If no quiz, previousModulePassed stays true
+            }
+
             return new CourseDetailVm
             {
                 Id = course.Id,
@@ -132,23 +190,7 @@ namespace Learnly.Services
                 InstructorName = course.Instructor?.DisplayName ?? "Unknown Instructor",
                 ThumbnailPath = course.ThumbnailPath ?? string.Empty,
                 IsEnrolled = isEnrolled,
-                Modules = course.Modules.OrderBy(m => m.OrderIndex).Select(m => new ModuleVm
-                {
-                    Id = m.Id,
-                    Title = m.Title,
-                    Order = m.OrderIndex,
-                    ThumbnailPath = m.ThumbnailPath,
-                    Lessons = m.Lessons.OrderBy(l => l.OrderIndex).Select(l => new LessonVm
-                    {
-                        Id = l.Id,
-                        Title = l.Title,
-                        ContentType = l.ContentType,
-                        DurationSeconds = l.DurationSeconds,
-                        Order = l.OrderIndex,
-                        IsCompleted = completedLessonIds.Contains(l.Id), // Set IsCompleted dynamically
-                        ThumbnailPath = l.ThumbnailPath
-                    }).ToList()
-                }).ToList()
+                Modules = moduleVms
             };
         }
 
@@ -160,6 +202,8 @@ namespace Learnly.Services
                 .Include(c => c.Category)
                 .Include(c => c.Modules)
                     .ThenInclude(m => m.Lessons)
+                .Include(c => c.Modules)
+                    .ThenInclude(m => m.Quiz)
                 .Include(c => c.Enrollments)
                 .FirstOrDefaultAsync();
 
@@ -188,6 +232,21 @@ namespace Learnly.Services
                     .ToHashSetAsync();
             }
 
+            // Get quiz pass status for each module
+            var moduleQuizPassStatus = new Dictionary<int, bool>();
+            if (isEnrolled && !string.IsNullOrEmpty(userId))
+            {
+                foreach (var module in course.Modules.Where(m => m.Quiz != null))
+                {
+                    var passed = await _context.Attempts
+                        .AnyAsync(a => a.QuizId == module.Quiz!.Id
+                                    && a.UserId == userId
+                                    && a.IsGraded
+                                    && a.Score >= Quiz.FixedPassingScore);
+                    moduleQuizPassStatus[module.Id] = passed;
+                }
+            }
+
             // Calculate totals
             var allLessons = course.Modules.SelectMany(m => m.Lessons).ToList();
             var totalDuration = allLessons.Sum(l => l.DurationSeconds);
@@ -197,6 +256,46 @@ namespace Learnly.Services
                 ?? (course.Instructor != null && !string.IsNullOrEmpty(course.Instructor.FirstName)
                     ? $"{course.Instructor.FirstName} {course.Instructor.LastName}".Trim()
                     : course.Instructor?.UserName ?? "Unknown Instructor");
+
+            // Build modules list with lock status
+            var orderedModules = course.Modules.OrderBy(m => m.OrderIndex).ToList();
+            var moduleVms = new List<ModuleVm>();
+            bool previousModulePassed = true;
+
+            foreach (var m in orderedModules)
+            {
+                var hasQuiz = m.Quiz != null;
+                var isQuizPassed = hasQuiz && moduleQuizPassStatus.GetValueOrDefault(m.Id, false);
+                var isLocked = !previousModulePassed;
+
+                moduleVms.Add(new ModuleVm
+                {
+                    Id = m.Id,
+                    Title = m.Title,
+                    Order = m.OrderIndex,
+                    ThumbnailPath = m.ThumbnailPath,
+                    HasQuiz = hasQuiz,
+                    QuizId = m.Quiz?.Id,
+                    IsQuizPassed = isQuizPassed,
+                    IsLocked = isLocked,
+                    Lessons = m.Lessons.OrderBy(l => l.OrderIndex).Select(l => new LessonVm
+                    {
+                        Id = l.Id,
+                        Title = l.Title,
+                        ContentType = l.ContentType,
+                        DurationSeconds = l.DurationSeconds,
+                        Order = l.OrderIndex,
+                        IsCompleted = completedLessonIds.Contains(l.Id),
+                        ThumbnailPath = l.ThumbnailPath
+                    }).ToList()
+                });
+
+                // Update previousModulePassed for next iteration
+                if (hasQuiz)
+                {
+                    previousModulePassed = isQuizPassed;
+                }
+            }
 
             return new CourseDetailVm
             {
@@ -213,23 +312,7 @@ namespace Learnly.Services
                 EnrolledStudents = course.Enrollments.Count,
                 CreatedAt = course.CreatedAt,
                 CategoryName = course.Category?.Name,
-                Modules = course.Modules.OrderBy(m => m.OrderIndex).Select(m => new ModuleVm
-                {
-                    Id = m.Id,
-                    Title = m.Title,
-                    Order = m.OrderIndex,
-                    ThumbnailPath = m.ThumbnailPath,
-                    Lessons = m.Lessons.OrderBy(l => l.OrderIndex).Select(l => new LessonVm
-                    {
-                        Id = l.Id,
-                        Title = l.Title,
-                        ContentType = l.ContentType,
-                        DurationSeconds = l.DurationSeconds,
-                        Order = l.OrderIndex,
-                        IsCompleted = completedLessonIds.Contains(l.Id),
-                        ThumbnailPath = l.ThumbnailPath
-                    }).ToList()
-                }).ToList()
+                Modules = moduleVms
             };
         }
 
@@ -241,6 +324,10 @@ namespace Learnly.Services
                     .ThenInclude(m => m.Course)
                         .ThenInclude(c => c.Modules)
                             .ThenInclude(m => m.Lessons)
+                .Include(l => l.Module)
+                    .ThenInclude(m => m.Course)
+                        .ThenInclude(c => c.Modules)
+                            .ThenInclude(m => m.Quiz)
                 .FirstOrDefaultAsync();
 
             if (lesson == null)
@@ -276,6 +363,21 @@ namespace Learnly.Services
                     .ToHashSetAsync();
             }
 
+            // Get quiz pass status for each module
+            var moduleQuizPassStatus = new Dictionary<int, bool>();
+            if (!string.IsNullOrEmpty(userId))
+            {
+                foreach (var module in course.Modules.Where(m => m.Quiz != null))
+                {
+                    var passed = await _context.Attempts
+                        .AnyAsync(a => a.QuizId == module.Quiz!.Id
+                                    && a.UserId == userId
+                                    && a.IsGraded
+                                    && a.Score >= Quiz.FixedPassingScore);
+                    moduleQuizPassStatus[module.Id] = passed;
+                }
+            }
+
             // Get all lessons in order to find prev/next
             var allLessons = course.Modules
                 .OrderBy(m => m.OrderIndex)
@@ -285,6 +387,57 @@ namespace Learnly.Services
             var currentIndex = allLessons.FindIndex(l => l.Id == lessonId);
             var prevLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
             var nextLesson = currentIndex < allLessons.Count - 1 ? allLessons[currentIndex + 1] : null;
+
+            // Get current module from the course's modules (ensures proper EF loading)
+            var currentModuleFromCourse = course.Modules.FirstOrDefault(m => m.Id == lesson.ModuleId);
+
+            // Check if current module has a quiz and if it's passed
+            var currentModuleHasQuiz = currentModuleFromCourse?.Quiz != null;
+            var currentModuleQuizPassed = currentModuleHasQuiz && moduleQuizPassStatus.GetValueOrDefault(lesson.ModuleId, false);
+
+            // Check if this is the last lesson in the current module
+            var currentModuleLessons = currentModuleFromCourse?.Lessons.OrderBy(l => l.OrderIndex).ToList() ?? new List<Lesson>();
+            var isLastLessonInModule = currentModuleLessons.Count > 0 && currentModuleLessons.Last().Id == lessonId;
+
+            // Build modules list with lock status
+            var orderedModules = course.Modules.OrderBy(m => m.OrderIndex).ToList();
+            var moduleVms = new List<ModuleVm>();
+            bool previousModulePassed = true;
+
+            foreach (var m in orderedModules)
+            {
+                var hasQuiz = m.Quiz != null;
+                var isQuizPassed = hasQuiz && moduleQuizPassStatus.GetValueOrDefault(m.Id, false);
+                var isLocked = !previousModulePassed;
+
+                moduleVms.Add(new ModuleVm
+                {
+                    Id = m.Id,
+                    Title = m.Title,
+                    Order = m.OrderIndex,
+                    ThumbnailPath = m.ThumbnailPath,
+                    HasQuiz = hasQuiz,
+                    QuizId = m.Quiz?.Id,
+                    IsQuizPassed = isQuizPassed,
+                    IsLocked = isLocked,
+                    Lessons = m.Lessons.OrderBy(l => l.OrderIndex).Select(l => new LessonVm
+                    {
+                        Id = l.Id,
+                        Title = l.Title,
+                        ContentType = l.ContentType,
+                        DurationSeconds = l.DurationSeconds,
+                        Order = l.OrderIndex,
+                        IsCompleted = completedLessonIds.Contains(l.Id),
+                        ThumbnailPath = l.ThumbnailPath
+                    }).ToList()
+                });
+
+                // Update previousModulePassed for next iteration
+                if (hasQuiz)
+                {
+                    previousModulePassed = isQuizPassed;
+                }
+            }
 
             return new LessonWithCurriculumVm
             {
@@ -303,26 +456,12 @@ namespace Learnly.Services
                 NextLessonTitle = nextLesson?.Title,
                 PreviousLessonId = prevLesson?.Id,
                 PreviousLessonTitle = prevLesson?.Title,
-                HasQuiz = false,
+                HasQuiz = currentModuleHasQuiz,
+                IsQuizPassed = currentModuleQuizPassed,
+                IsLastLessonInModule = isLastLessonInModule,
                 Transcript = null,
                 PositionSeconds = positionSeconds,
-                Modules = course.Modules.OrderBy(m => m.OrderIndex).Select(m => new ModuleVm
-                {
-                    Id = m.Id,
-                    Title = m.Title,
-                    Order = m.OrderIndex,
-                    ThumbnailPath = m.ThumbnailPath,
-                    Lessons = m.Lessons.OrderBy(l => l.OrderIndex).Select(l => new LessonVm
-                    {
-                        Id = l.Id,
-                        Title = l.Title,
-                        ContentType = l.ContentType,
-                        DurationSeconds = l.DurationSeconds,
-                        Order = l.OrderIndex,
-                        IsCompleted = completedLessonIds.Contains(l.Id),
-                        ThumbnailPath = l.ThumbnailPath
-                    }).ToList()
-                }).ToList(),
+                Modules = moduleVms,
                 TotalLessons = allLessons.Count,
                 CompletedLessons = completedLessonIds.Count
             };

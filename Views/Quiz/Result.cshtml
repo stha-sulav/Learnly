@@ -21,13 +21,21 @@
             @if (Model.Passed)
             {
                 <div class="alert alert-success" role="alert">
-                    <h4>Congratulations, you passed!</h4>
+                    <h4><i class="bi bi-check-circle me-2"></i>Congratulations, you passed!</h4>
+                    @if (Model.UnlocksNextModule && !string.IsNullOrEmpty(Model.NextModuleTitle))
+                    {
+                        <p class="mb-0 mt-2">
+                            <i class="bi bi-unlock me-1"></i>
+                            You've unlocked the next module: <strong>@Model.NextModuleTitle</strong>
+                        </p>
+                    }
                 </div>
             }
             else
             {
                 <div class="alert alert-danger" role="alert">
-                    <h4>You did not pass. Keep studying and try again!</h4>
+                    <h4><i class="bi bi-x-circle me-2"></i>You did not pass.</h4>
+                    <p class="mb-0">Keep studying and try again! You need at least 70% to pass.</p>
                 </div>
             }
 
@@ -51,11 +59,21 @@
                 }
             </ul>
         </div>
-        <div class="card-footer text-muted">
-            @if (!Model.Passed)
-            {
-                <a href="@Url.Action("Take", "Quiz", new { lessonId = Model.QuizId })" class="btn btn-secondary">Retake Quiz</a> 
-            }
+        <div class="card-footer">
+            <div class="d-flex justify-content-center gap-2">
+                @if (!Model.Passed)
+                {
+                    <a href="@Url.Action("Take", "Quiz", new { moduleId = Model.ModuleId })" class="btn btn-primary">
+                        <i class="bi bi-arrow-repeat me-1"></i>Retake Quiz
+                    </a>
+                }
+                else if (Model.UnlocksNextModule && Model.NextModuleId.HasValue)
+                {
+                    <a href="@Url.Page("/Courses/Details", new { id = Model.ModuleId })" class="btn btn-success">
+                        <i class="bi bi-arrow-right me-1"></i>Continue to Next Module
+                    </a>
+                }
+            </div>
         </div>
     </div>
 </div>

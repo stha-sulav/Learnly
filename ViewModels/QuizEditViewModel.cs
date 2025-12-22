@@ -7,15 +7,12 @@ namespace Learnly.ViewModels
         public int Id { get; set; }
 
         [Required]
-        public int LessonId { get; set; }
+        public int ModuleId { get; set; }
+
+        public string? ModuleTitle { get; set; }
 
         [Required]
         [StringLength(200, MinimumLength = 3)]
         public required string Title { get; set; }
-
-        [Range(0, 100)]
-        public int PassingScore { get; set; } = 70;
-        
-        public int? AttemptsAllowed { get; set; }
     }
 }

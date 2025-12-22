@@ -1,0 +1,167 @@
+@model Learnly.ViewModels.QuestionEditViewModel
+@{
+    ViewData["Title"] = "Edit Question";
+}
+
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/Instructor/Courses/CourseList">Courses</a></li>
+            <li class="breadcrumb-item"><a href="/Instructor/Quiz/ManageQuestions/@Model.QuizId">Questions</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Edit Question</li>
+        </ol>
+    </nav>
+
+    <h1 class="mb-4">Edit Question</h1>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form asp-action="EditQuestion" asp-route-questionId="@Model.Id" method="post" id="questionForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Id" />
+                <input type="hidden" asp-for="QuizId" />
+
+                <div class="mb-3">
+                    <label asp-for="Text" class="form-label">Question Text <span class="text-danger">*</span></label>
+                    <textarea asp-for="Text" class="form-control" rows="3"></textarea>
+                    <span asp-validation-for="Text" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Type" class="form-label">Question Type <span class="text-danger">*</span></label>
+                    <select asp-for="Type" class="form-select" id="questionType" asp-items="Html.GetEnumSelectList<Learnly.Models.QuestionType>()">
+                    </select>
+                </div>
+
+                <div id="optionsContainer" class="mb-3">
+                    <label class="form-label">Answer Options</label>
+                    <div class="alert alert-info small">
+                        <i class="bi bi-info-circle me-1"></i>
+                        <span id="optionsHelp">For Multiple Choice, the first option is the correct answer.</span>
+                    </div>
+                    <div id="optionsList">
+                        @if (Model.Type != Learnly.Models.QuestionType.ShortAnswer)
+                        {
+                            @for (int i = 0; i < Model.Options.Count; i++)
+                            {
+                                var label = i == 0 ? "" : ((char)('A' + i)).ToString();
+                                <div class="input-group mb-2 option-row">
+                                    @if (i == 0)
+                                    {
+                                        <span class="input-group-text"><i class="bi bi-check-circle text-success"></i></span>
+                                        <input type="text" name="Options" class="form-control" value="@Model.Options[i]" placeholder="Correct answer" required />
+                                    }
+                                    else
+                                    {
+                                        <span class="input-group-text text-muted">@label</span>
+                                        <input type="text" name="Options" class="form-control" value="@Model.Options[i]" placeholder="Option @label" />
+                                        <button type="button" class="btn btn-outline-danger remove-option"><i class="bi bi-x"></i></button>
+                                    }
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="input-group mb-2 option-row">
+                                <span class="input-group-text"><i class="bi bi-check-circle text-success"></i></span>
+                                <input type="text" name="Options" class="form-control" placeholder="Correct answer" required />
+                            </div>
+                            <div class="input-group mb-2 option-row">
+                                <span class="input-group-text text-muted">B</span>
+                                <input type="text" name="Options" class="form-control" placeholder="Option B" />
+                                <button type="button" class="btn btn-outline-danger remove-option"><i class="bi bi-x"></i></button>
+                            </div>
+                            <div class="input-group mb-2 option-row">
+                                <span class="input-group-text text-muted">C</span>
+                                <input type="text" name="Options" class="form-control" placeholder="Option C" />
+                                <button type="button" class="btn btn-outline-danger remove-option"><i class="bi bi-x"></i></button>
+                            </div>
+                            <div class="input-group mb-2 option-row">
+                                <span class="input-group-text text-muted">D</span>
+                                <input type="text" name="Options" class="form-control" placeholder="Option D" />
+                                <button type="button" class="btn btn-outline-danger remove-option"><i class="bi bi-x"></i></button>
+                            </div>
+                        }
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="addOptionBtn">
+                        <i class="bi bi-plus me-1"></i>Add Option
+                    </button>
+                </div>
+
+                <div id="shortAnswerContainer" class="mb-3" style="display: @(Model.Type == Learnly.Models.QuestionType.ShortAnswer ? "block" : "none");">
+                    <label class="form-label">Correct Answer <span class="text-danger">*</span></label>
+                    <input type="text" name="Options" class="form-control short-answer-input"
+                           value="@(Model.Type == Learnly.Models.QuestionType.ShortAnswer && Model.Options.Any() ? Model.Options[0] : "")"
+                           placeholder="Enter the correct answer"
+                           @(Model.Type != Learnly.Models.QuestionType.ShortAnswer ? "disabled" : "") />
+                    <small class="text-muted">The student's answer must match this exactly (case-insensitive).</small>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-1"></i>Save Changes
+                    </button>
+                    <a href="/Instructor/Quiz/ManageQuestions/@Model.QuizId" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const questionType = document.getElementById('questionType');
+            const optionsContainer = document.getElementById('optionsContainer');
+            const shortAnswerContainer = document.getElementById('shortAnswerContainer');
+            const optionsList = document.getElementById('optionsList');
+            const addOptionBtn = document.getElementById('addOptionBtn');
+            const optionsHelp = document.getElementById('optionsHelp');
+
+            function updateUI() {
+                const type = questionType.value;
+                const isShortAnswer = type === 'ShortAnswer';
+
+                optionsContainer.style.display = isShortAnswer ? 'none' : 'block';
+                shortAnswerContainer.style.display = isShortAnswer ? 'block' : 'none';
+
+                // Enable/disable inputs
+                optionsContainer.querySelectorAll('input').forEach(i => i.disabled = isShortAnswer);
+                const shortInput = shortAnswerContainer.querySelector('input');
+                if (shortInput) shortInput.disabled = !isShortAnswer;
+
+                if (type === 'MultipleSelect') {
+                    optionsHelp.textContent = 'For Multiple Select, mark the correct answers by placing them first.';
+                } else {
+                    optionsHelp.textContent = 'For Multiple Choice, the first option is the correct answer.';
+                }
+            }
+
+            questionType.addEventListener('change', updateUI);
+
+            addOptionBtn.addEventListener('click', function() {
+                const optionCount = optionsList.querySelectorAll('.option-row').length;
+                const labels = 'EFGHIJKLMNOPQRSTUVWXYZ';
+                const label = labels[optionCount - 4] || (optionCount + 1);
+
+                const div = document.createElement('div');
+                div.className = 'input-group mb-2 option-row';
+                div.innerHTML = `
+                    <span class="input-group-text text-muted">${label}</span>
+                    <input type="text" name="Options" class="form-control" placeholder="Option ${label}" />
+                    <button type="button" class="btn btn-outline-danger remove-option"><i class="bi bi-x"></i></button>
+                `;
+                optionsList.appendChild(div);
+            });
+
+            optionsList.addEventListener('click', function(e) {
+                if (e.target.closest('.remove-option')) {
+                    e.target.closest('.option-row').remove();
+                }
+            });
+
+            updateUI();
+        });
+    </script>
+}

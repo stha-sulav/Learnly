@@ -22,6 +22,8 @@ namespace Learnly.ViewModels
         public int? PreviousLessonId { get; set; }
         public string? PreviousLessonTitle { get; set; }
         public bool HasQuiz { get; set; }
+        public bool IsQuizPassed { get; set; }
+        public bool IsLastLessonInModule { get; set; }
         public string? Transcript { get; set; }
         public int PositionSeconds { get; set; }
 

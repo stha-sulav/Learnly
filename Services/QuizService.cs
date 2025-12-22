@@ -19,32 +19,52 @@ namespace Learnly.Services
             _context = context;
         }
 
-        public async Task<QuizViewModel?> GetQuizByLessonId(int lessonId)
+        public async Task<QuizViewModel?> GetQuizByModuleIdAsync(int moduleId)
         {
             var quiz = await _context.Quizzes
                 .Include(q => q.Questions)
-                .FirstOrDefaultAsync(q => q.LessonId == lessonId);
+                .Include(q => q.Module)
+                .FirstOrDefaultAsync(q => q.ModuleId == moduleId);
 
             if (quiz == null)
             {
                 return null;
             }
 
+            var random = new Random();
+
             return new QuizViewModel
             {
                 Id = quiz.Id,
-                LessonId = quiz.LessonId,
+                ModuleId = quiz.ModuleId,
+                ModuleTitle = quiz.Module?.Title,
                 Title = quiz.Title!,
                 Questions = quiz.Questions.Select(q => new QuestionViewModel
                 {
                     Id = q.Id,
                     Text = q.Text,
                     Type = q.Type.ToString(),
-                    Options = !string.IsNullOrEmpty(q.Options) 
-                        ? JsonSerializer.Deserialize<List<string>>(q.Options) 
-                        : new List<string>()
+                    Options = ShuffleOptions(
+                        !string.IsNullOrEmpty(q.Options)
+                            ? JsonSerializer.Deserialize<List<string>>(q.Options) ?? new List<string>()
+                            : new List<string>(),
+                        random)
                 }).ToList()
             };
+        }
+
+        private static List<string> ShuffleOptions(List<string> options, Random random)
+        {
+            if (options.Count <= 1) return options;
+
+            // Fisher-Yates shuffle
+            var shuffled = new List<string>(options);
+            for (int i = shuffled.Count - 1; i > 0; i--)
+            {
+                int j = random.Next(i + 1);
+                (shuffled[i], shuffled[j]) = (shuffled[j], shuffled[i]);
+            }
+            return shuffled;
         }
 
         public async Task<int> StartQuizAttempt(int quizId, string userId)
@@ -79,13 +99,17 @@ namespace Learnly.Services
         {
             var attempt = await _context.Attempts
                 .Include(a => a.Quiz)
-                    .ThenInclude(q => q.Questions)
+                    .ThenInclude(q => q!.Questions)
+                .Include(a => a.Quiz)
+                    .ThenInclude(q => q!.Module)
                 .FirstOrDefaultAsync(a => a.Id == attemptId, ct);
 
             if (attempt == null)
             {
                 throw new ArgumentException("Attempt not found.");
             }
+
+            var passingScore = Quiz.FixedPassingScore;
 
             if (attempt.IsGraded)
             {
@@ -94,17 +118,26 @@ namespace Learnly.Services
                     ? new List<QuestionFeedbackDto>()
                     : JsonSerializer.Deserialize<List<QuestionFeedbackDto>>(attempt.Feedback) ?? new List<QuestionFeedbackDto>();
 
-                return new GradeResultDto
+                var result = new GradeResultDto
                 {
                     AttemptId = attempt.Id,
                     QuizId = attempt.QuizId,
+                    ModuleId = attempt.Quiz!.ModuleId,
                     QuizTitle = attempt.Quiz!.Title ?? "Unknown Quiz",
                     Score = attempt.Score,
-                    PassingScore = attempt.Quiz!.PassingScore,
-                    Passed = attempt.Score >= attempt.Quiz!.PassingScore,
-                    GradedAt = attempt.GradedAt ?? DateTime.UtcNow, // Use existing GradedAt if present
+                    PassingScore = passingScore,
+                    Passed = attempt.Score >= passingScore,
+                    GradedAt = attempt.GradedAt ?? DateTime.UtcNow,
                     QuestionFeedbacks = existingFeedback
                 };
+
+                // Check if passing unlocks next module
+                if (result.Passed)
+                {
+                    await PopulateNextModuleInfo(result, attempt.Quiz!.ModuleId, ct);
+                }
+
+                return result;
             }
 
             if (string.IsNullOrEmpty(attempt.Answers))
@@ -120,9 +153,10 @@ namespace Learnly.Services
                 {
                     AttemptId = attempt.Id,
                     QuizId = attempt.QuizId,
+                    ModuleId = attempt.Quiz!.ModuleId,
                     QuizTitle = attempt.Quiz!.Title ?? "Unknown Quiz",
                     Score = 0,
-                    PassingScore = attempt.Quiz!.PassingScore,
+                    PassingScore = passingScore,
                     Passed = false,
                     GradedAt = attempt.GradedAt.Value,
                     QuestionFeedbacks = new List<QuestionFeedbackDto>()
@@ -130,17 +164,17 @@ namespace Learnly.Services
             }
 
             var submittedAnswers = JsonSerializer.Deserialize<List<AnswerViewModel>>(attempt.Answers) ?? new List<AnswerViewModel>();
-            
+
             decimal totalRawPoints = 0;
             decimal totalPossiblePoints = 0;
             var questionFeedbacks = new List<QuestionFeedbackDto>();
 
-            foreach (var question in attempt.Quiz!.Questions.OrderBy(q => q.Id)) // Ensure consistent order
+            foreach (var question in attempt.Quiz!.Questions.OrderBy(q => q.Id))
             {
                 var userAnswer = submittedAnswers.FirstOrDefault(sa => sa.QuestionId == question.Id);
-                
+
                 decimal earnedPoints = 0;
-                decimal possiblePoints = 1; // Default to 1 point per question
+                decimal possiblePoints = 1;
 
                 var correctOptions = !string.IsNullOrEmpty(question.Options)
                     ? JsonSerializer.Deserialize<List<string>>(question.Options) ?? new List<string>()
@@ -155,8 +189,6 @@ namespace Learnly.Services
                     {
                         case QuestionType.MultipleChoice:
                         case QuestionType.ShortAnswer:
-                            // For MVP, assume the first option in Question.Options is the single correct one.
-                            // For ShortAnswer, assume the first option in Question.Options is the exact correct answer.
                             if (correctOptions.Any() && userAnswer.SelectedOptions != null && userAnswer.SelectedOptions.Count == 1)
                             {
                                 isCorrect = string.Equals(userAnswer.SelectedOptions.First().Trim(), correctOptions.First().Trim(), StringComparison.OrdinalIgnoreCase);
@@ -178,17 +210,16 @@ namespace Learnly.Services
                             break;
 
                         case QuestionType.MultipleSelect:
-                            // Partial credit logic for MultiSelect
                             if (userAnswer.SelectedOptions != null && correctOptions.Any())
                             {
                                 var correctSelected = userAnswer.SelectedOptions.Where(s => correctOptions.Contains(s, StringComparer.OrdinalIgnoreCase)).Count();
                                 var incorrectSelected = userAnswer.SelectedOptions.Where(s => !correctOptions.Contains(s, StringComparer.OrdinalIgnoreCase)).Count();
-                                
+
                                 decimal scoreRatio = (decimal)correctSelected / correctOptions.Count;
-                                decimal penalty = incorrectSelected * 0.1m; // 0.1 penalty per incorrect selection
-                                
-                                earnedPoints = Math.Max(0, scoreRatio - penalty); // Clamp at 0
-                                earnedPoints = Math.Round(earnedPoints, 2); // Round to 2 decimal places
+                                decimal penalty = incorrectSelected * 0.1m;
+
+                                earnedPoints = Math.Max(0, scoreRatio - penalty);
+                                earnedPoints = Math.Round(earnedPoints, 2);
 
                                 if (earnedPoints >= 1)
                                 {
@@ -210,10 +241,6 @@ namespace Learnly.Services
                             break;
                     }
                 }
-                else
-                {
-                    feedbackMessage = "Not answered.";
-                }
 
                 totalRawPoints += earnedPoints;
                 totalPossiblePoints += possiblePoints;
@@ -234,29 +261,139 @@ namespace Learnly.Services
 
             await _context.SaveChangesAsync(ct);
 
-            return new GradeResultDto
+            var gradeResult = new GradeResultDto
             {
                 AttemptId = attempt.Id,
                 QuizId = attempt.QuizId,
+                ModuleId = attempt.Quiz!.ModuleId,
                 QuizTitle = attempt.Quiz!.Title ?? "Unknown Quiz",
                 Score = attempt.Score,
-                PassingScore = attempt.Quiz!.PassingScore,
-                Passed = attempt.Score >= attempt.Quiz!.PassingScore,
+                PassingScore = passingScore,
+                Passed = attempt.Score >= passingScore,
                 GradedAt = attempt.GradedAt.Value,
                 QuestionFeedbacks = questionFeedbacks
             };
+
+            // Check if passing unlocks next module
+            if (gradeResult.Passed)
+            {
+                await PopulateNextModuleInfo(gradeResult, attempt.Quiz!.ModuleId, ct);
+            }
+
+            return gradeResult;
         }
 
+        private async Task PopulateNextModuleInfo(GradeResultDto result, int currentModuleId, CancellationToken ct)
+        {
+            var currentModule = await _context.Modules
+                .FirstOrDefaultAsync(m => m.Id == currentModuleId, ct);
+
+            if (currentModule == null) return;
+
+            var nextModule = await _context.Modules
+                .Where(m => m.CourseId == currentModule.CourseId && m.OrderIndex > currentModule.OrderIndex)
+                .OrderBy(m => m.OrderIndex)
+                .FirstOrDefaultAsync(ct);
+
+            if (nextModule != null)
+            {
+                result.UnlocksNextModule = true;
+                result.NextModuleId = nextModule.Id;
+                result.NextModuleTitle = nextModule.Title;
+            }
+        }
+
+        // Module access control methods
+        public async Task<bool> HasUserPassedModuleQuizAsync(int moduleId, string userId)
+        {
+            var quiz = await _context.Quizzes.FirstOrDefaultAsync(q => q.ModuleId == moduleId);
+
+            // No quiz means module is automatically "passed"
+            if (quiz == null) return true;
+
+            return await _context.Attempts
+                .AnyAsync(a => a.QuizId == quiz.Id
+                            && a.UserId == userId
+                            && a.IsGraded
+                            && a.Score >= Quiz.FixedPassingScore);
+        }
+
+        public async Task<bool> CanUserAccessModuleAsync(int moduleId, string userId)
+        {
+            var module = await _context.Modules
+                .FirstOrDefaultAsync(m => m.Id == moduleId);
+
+            if (module == null) return false;
+
+            // Find the previous module (the one with the largest OrderIndex that's still less than current)
+            var previousModule = await _context.Modules
+                .Where(m => m.CourseId == module.CourseId && m.OrderIndex < module.OrderIndex)
+                .OrderByDescending(m => m.OrderIndex)
+                .FirstOrDefaultAsync();
+
+            // If no previous module found, this is the first module - always accessible
+            if (previousModule == null) return true;
+
+            // Check if previous module has a quiz
+            var previousModuleQuiz = await _context.Quizzes
+                .FirstOrDefaultAsync(q => q.ModuleId == previousModule.Id);
+
+            // If previous module has no quiz, current module is accessible
+            if (previousModuleQuiz == null) return true;
+
+            // Check if user has passed the previous module's quiz
+            return await _context.Attempts
+                .AnyAsync(a => a.QuizId == previousModuleQuiz.Id
+                            && a.UserId == userId
+                            && a.IsGraded
+                            && a.Score >= Quiz.FixedPassingScore);
+        }
+
+        public async Task<List<int>> GetAccessibleModuleIdsAsync(int courseId, string userId)
+        {
+            var modules = await _context.Modules
+                .Where(m => m.CourseId == courseId)
+                .OrderBy(m => m.OrderIndex)
+                .Include(m => m.Quiz)
+                .ToListAsync();
+
+            var accessibleIds = new List<int>();
+            bool previousModulePassed = true;
+
+            foreach (var module in modules)
+            {
+                // First module (in sorted order) or previous module passed = accessible
+                if (previousModulePassed)
+                {
+                    accessibleIds.Add(module.Id);
+                }
+
+                // Check if this module's quiz is passed for next iteration
+                if (module.Quiz != null)
+                {
+                    previousModulePassed = await _context.Attempts
+                        .AnyAsync(a => a.QuizId == module.Quiz.Id
+                                    && a.UserId == userId
+                                    && a.IsGraded
+                                    && a.Score >= Quiz.FixedPassingScore);
+                }
+                else
+                {
+                    // No quiz means automatically passed
+                    previousModulePassed = true;
+                }
+            }
+
+            return accessibleIds;
+        }
 
         // Instructor-facing methods
         public async Task<int> CreateQuizAsync(QuizEditViewModel model)
         {
             var quiz = new Quiz
             {
-                LessonId = model.LessonId,
-                Title = model.Title,
-                PassingScore = model.PassingScore,
-                AttemptsAllowed = model.AttemptsAllowed
+                ModuleId = model.ModuleId,
+                Title = model.Title
             };
 
             _context.Quizzes.Add(quiz);
@@ -270,8 +407,6 @@ namespace Learnly.Services
             if (quiz != null)
             {
                 quiz.Title = model.Title;
-                quiz.PassingScore = model.PassingScore;
-                quiz.AttemptsAllowed = model.AttemptsAllowed;
                 await _context.SaveChangesAsync();
             }
         }
@@ -288,16 +423,18 @@ namespace Learnly.Services
 
         public async Task<QuizEditViewModel?> GetQuizForEditAsync(int quizId)
         {
-            var quiz = await _context.Quizzes.FindAsync(quizId);
+            var quiz = await _context.Quizzes
+                .Include(q => q.Module)
+                .FirstOrDefaultAsync(q => q.Id == quizId);
+
             if (quiz == null) return null;
 
             return new QuizEditViewModel
             {
                 Id = quiz.Id,
-                LessonId = quiz.LessonId,
-                Title = quiz.Title,
-                PassingScore = quiz.PassingScore,
-                AttemptsAllowed = quiz.AttemptsAllowed
+                ModuleId = quiz.ModuleId,
+                ModuleTitle = quiz.Module?.Title,
+                Title = quiz.Title
             };
         }
 

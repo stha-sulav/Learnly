@@ -15,7 +15,10 @@
       "Bash(Select-String -Pattern \"error|Build\")",
       "Bash(ls:*)",
       "Bash(taskkill:*)",
-      "Bash(powershell -Command:*)"
+      "Bash(powershell -Command:*)",
+      "Bash(dir \"C:\\\\Users\\\\SulavShrestha\\\\Developer\\\\Learnly\\\\Views\")",
+      "Bash(dir \"C:\\\\Users\\\\SulavShrestha\\\\Developer\\\\Learnly\\\\Views\\\\Instructor\")",
+      "Bash(Select-String -Pattern \"error\")"
     ]
   }
 }

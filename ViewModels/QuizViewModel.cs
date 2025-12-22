@@ -6,7 +6,8 @@ namespace Learnly.ViewModels
     {
         public int Id { get; set; }
         public required string Title { get; set; }
-        public int LessonId { get; set; }
+        public int ModuleId { get; set; }
+        public string? ModuleTitle { get; set; }
         public List<QuestionViewModel> Questions { get; set; } = new List<QuestionViewModel>();
     }
 

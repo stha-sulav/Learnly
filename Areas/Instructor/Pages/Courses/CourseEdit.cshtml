@@ -271,6 +271,54 @@
                 </div>
             </div>
         </div>
+
+        <!-- Module Quiz Modal -->
+        <div class="modal fade" id="moduleQuizModal" tabindex="-1" aria-labelledby="moduleQuizModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="moduleQuizModalLabel"><i class="bi bi-question-circle me-2"></i>Module Quiz</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="quiz-module-id" />
+                        <input type="hidden" id="quiz-id" />
+                        <div id="quiz-info" class="mb-3">
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle me-2"></i>
+                                Module quizzes help ensure students understand the content before moving on. Students must score at least 70% to unlock the next module.
+                            </div>
+                        </div>
+                        <div id="quiz-form">
+                            <div class="mb-3">
+                                <label for="quiz-title" class="form-label">Quiz Title <span class="text-danger">*</span></label>
+                                <input type="text" id="quiz-title" class="form-control" placeholder="e.g., Module 1 Quiz" required />
+                            </div>
+                        </div>
+                        <div id="quiz-exists" style="display: none;">
+                            <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded mb-3">
+                                <div>
+                                    <strong id="existing-quiz-title"></strong>
+                                    <div class="text-muted small">Passing score: 70%</div>
+                                </div>
+                                <a id="manage-questions-link" href="#" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-list-check me-1"></i>Manage Questions
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" id="delete-quiz-btn" class="btn btn-outline-danger" style="display: none;">
+                            <i class="bi bi-trash me-1"></i>Delete Quiz
+                        </button>
+                        <button type="button" id="save-quiz-btn" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i>Save Quiz
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     }
         </div>
     </div>
@@ -308,7 +356,7 @@
         gap: 0.375rem;
         flex-shrink: 0;
     }
-    .modules-tree .module-header .module-actions .btn {
+    .modules-tree .module-header .module-actions .btn:not(.dropdown-toggle):not(.add-lesson-trigger) {
         width: 32px;
         height: 32px;
         padding: 0;
@@ -316,6 +364,16 @@
         align-items: center;
         justify-content: center;
         margin: 0;
+    }
+    .modules-tree .module-header .module-actions .btn.dropdown-toggle,
+    .modules-tree .module-header .module-actions .btn.add-lesson-trigger {
+        height: 32px;
+        padding: 0 0.75rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0;
+        font-size: 0.8125rem;
     }
     .modules-tree .module-header .module-actions .btn i {
         font-size: 0.875rem;
@@ -356,6 +414,10 @@
         flex: 1;
         min-width: 0;
         overflow: hidden;
+        background: transparent;
+    }
+    .modules-tree .lesson-item:hover .lesson-info {
+        background: inherit;
     }
     .modules-tree .lesson-info span {
         white-space: nowrap;
@@ -399,6 +461,13 @@
     .modules-tree .module-badge {
         font-size: 0.75rem;
         padding: 0.25rem 0.5rem;
+    }
+    .modules-tree .quiz-item {
+        background-color: rgba(var(--bs-primary-rgb), 0.05);
+        border-top: 1px dashed var(--bs-border-color);
+    }
+    .modules-tree .quiz-item:hover {
+        background-color: var(--bs-tertiary-bg);
     }
 </style>
 
@@ -455,13 +524,21 @@
                         }
                         modulesData = await response.json();
 
-                        // Load lessons for each module
+                        // Load lessons and quiz for each module
                         for (const module of modulesData) {
                             const lessonsResponse = await fetch(`/api/Lessons/ByModule/${module.id}`);
                             if (lessonsResponse.ok) {
                                 module.lessons = await lessonsResponse.json();
                             } else {
                                 module.lessons = [];
+                            }
+
+                            // Load quiz for this module
+                            const quizResponse = await fetch(`/api/Quiz/ByModule/${module.id}`);
+                            if (quizResponse.ok) {
+                                module.quiz = await quizResponse.json();
+                            } else {
+                                module.quiz = null;
                             }
                         }
 
@@ -500,9 +577,21 @@
                                     <span class="badge bg-secondary module-badge">${lessonCount} lesson${lessonCount !== 1 ? 's' : ''}</span>
                                 </div>
                                 <div class="module-actions">
-                                    <button class="btn btn-sm btn-outline-success add-lesson-trigger" data-module-id="${module.id}" title="Add Lesson">
-                                        <i class="bi bi-plus-lg"></i>
+                                    ${!module.quiz ? `
+                                    <div class="btn-group">
+                                        <button type="button" class="btn btn-sm btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="bi bi-plus-lg me-1"></i>Add
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li><a class="dropdown-item add-lesson-trigger" href="#" data-module-id="${module.id}"><i class="bi bi-play-btn me-2"></i>Add Lesson</a></li>
+                                            <li><a class="dropdown-item add-quiz-link" href="#" data-module-id="${module.id}"><i class="bi bi-question-circle me-2"></i>Add Quiz</a></li>
+                                        </ul>
+                                    </div>
+                                    ` : `
+                                    <button class="btn btn-sm btn-primary add-lesson-trigger" data-module-id="${module.id}" title="Add Lesson">
+                                        <i class="bi bi-plus-lg me-1"></i>Add Lesson
                                     </button>
+                                    `}
                                     <button class="btn btn-sm btn-outline-primary edit-module-trigger" data-module-id="${module.id}" data-module-title="${module.title}" data-module-thumbnail="${module.thumbnailPath || ''}" title="Edit Module">
                                         <i class="bi bi-pencil"></i>
                                     </button>
@@ -534,35 +623,64 @@
                 }
 
                 function renderLessons(module) {
+                    let html = '<ul class="lessons-list">';
+
                     if (!module.lessons || module.lessons.length === 0) {
-                        return `<div class="empty-lessons"><i class="bi bi-file-earmark me-2"></i>No lessons yet. Click + to add one.</div>`;
+                        html += `<li class="lesson-item text-muted"><div class="lesson-info"><i class="bi bi-file-earmark me-2"></i>No lessons yet. Click + to add one.</div></li>`;
+                    } else {
+                        module.lessons.forEach((lesson, index) => {
+                            const hasVideo = lesson.contentPath || lesson.videoPath;
+                            const thumbnailHtml = lesson.thumbnailPath
+                                ? `<img src="${lesson.thumbnailPath}" alt="${lesson.title}" class="lesson-thumbnail rounded" style="width: 32px; height: 24px; object-fit: cover;">`
+                                : `<div class="lesson-thumbnail-default bg-secondary rounded d-flex align-items-center justify-content-center" style="width: 32px; height: 24px;"><i class="bi bi-book text-white" style="font-size: 0.75rem;"></i></div>`;
+                            html += `
+                                <li class="lesson-item" data-lesson-id="${lesson.id}">
+                                    <div class="lesson-info">
+                                        ${thumbnailHtml}
+                                        <span>${lesson.title}</span>
+                                        ${hasVideo ? '<span class="badge bg-info ms-2">Video</span>' : ''}
+                                    </div>
+                                    <div class="lesson-actions">
+                                        ${hasVideo ? `<a href="${lesson.contentPath || lesson.videoPath}" target="_blank" class="btn btn-sm btn-outline-info" title="Preview"><i class="bi bi-eye"></i></a>` : ''}
+                                        <button class="btn btn-sm btn-outline-primary edit-lesson-trigger" data-lesson-id="${lesson.id}" data-lesson-title="${lesson.title}" data-lesson-thumbnail="${lesson.thumbnailPath || ''}" title="Edit Lesson">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger delete-lesson-trigger" data-lesson-id="${lesson.id}" data-module-id="${module.id}" title="Delete Lesson">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </li>
+                            `;
+                        });
                     }
 
-                    let html = '<ul class="lessons-list">';
-                    module.lessons.forEach((lesson, index) => {
-                        const hasVideo = lesson.contentPath || lesson.videoPath;
-                        const thumbnailHtml = lesson.thumbnailPath
-                            ? `<img src="${lesson.thumbnailPath}" alt="${lesson.title}" class="lesson-thumbnail rounded" style="width: 32px; height: 24px; object-fit: cover;">`
-                            : `<div class="lesson-thumbnail-default bg-secondary rounded d-flex align-items-center justify-content-center" style="width: 32px; height: 24px;"><i class="bi bi-book text-white" style="font-size: 0.75rem;"></i></div>`;
+                    // Add quiz item at the end if exists
+                    if (module.quiz) {
                         html += `
-                            <li class="lesson-item" data-lesson-id="${lesson.id}">
+                            <li class="lesson-item quiz-item" data-quiz-id="${module.quiz.id}">
                                 <div class="lesson-info">
-                                    ${thumbnailHtml}
-                                    <span>${lesson.title}</span>
-                                    ${hasVideo ? '<span class="badge bg-info ms-2">Video</span>' : ''}
+                                    <div class="lesson-thumbnail-default bg-primary rounded d-flex align-items-center justify-content-center" style="width: 32px; height: 24px;">
+                                        <i class="bi bi-question-circle text-white" style="font-size: 0.75rem;"></i>
+                                    </div>
+                                    <span>${module.quiz.title}</span>
+                                    <span class="badge bg-primary ms-2">Quiz</span>
+                                    <span class="badge bg-secondary ms-1">${module.quiz.questions ? module.quiz.questions.length : 0} questions</span>
                                 </div>
                                 <div class="lesson-actions">
-                                    ${hasVideo ? `<a href="${lesson.contentPath || lesson.videoPath}" target="_blank" class="btn btn-sm btn-outline-info" title="Preview"><i class="bi bi-eye"></i></a>` : ''}
-                                    <button class="btn btn-sm btn-outline-primary edit-lesson-trigger" data-lesson-id="${lesson.id}" data-lesson-title="${lesson.title}" data-lesson-thumbnail="${lesson.thumbnailPath || ''}" title="Edit Lesson">
+                                    <a href="/Instructor/Quiz/ManageQuestions/${module.quiz.id}" class="btn btn-sm btn-outline-info" title="Manage Questions">
+                                        <i class="bi bi-list-check"></i>
+                                    </a>
+                                    <button class="btn btn-sm btn-outline-primary edit-quiz-trigger" data-quiz-id="${module.quiz.id}" data-quiz-title="${module.quiz.title}" data-module-id="${module.id}" title="Edit Quiz">
                                         <i class="bi bi-pencil"></i>
                                     </button>
-                                    <button class="btn btn-sm btn-outline-danger delete-lesson-trigger" data-lesson-id="${lesson.id}" data-module-id="${module.id}" title="Delete Lesson">
+                                    <button class="btn btn-sm btn-outline-danger delete-quiz-trigger" data-quiz-id="${module.quiz.id}" data-module-id="${module.id}" title="Delete Quiz">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </div>
                             </li>
                         `;
-                    });
+                    }
+
                     html += '</ul>';
                     return html;
                 }
@@ -989,6 +1107,196 @@
                         loadModules();
                     } catch (error) {
                         showAlert('An error occurred while updating the lesson.', 'error');
+                    }
+                });
+
+                // Module Quiz Management
+                const moduleQuizModal = new bootstrap.Modal(document.getElementById('moduleQuizModal'));
+
+                // Inline Quiz Edit trigger
+                modulesTree.addEventListener('click', function(e) {
+                    const editBtn = e.target.closest('.edit-quiz-trigger');
+                    if (editBtn) {
+                        e.stopPropagation();
+                        const quizId = editBtn.dataset.quizId;
+                        const quizTitle = editBtn.dataset.quizTitle;
+                        const moduleId = editBtn.dataset.moduleId;
+                        document.getElementById('quiz-module-id').value = moduleId;
+                        document.getElementById('quiz-id').value = quizId;
+                        document.getElementById('quiz-title').value = quizTitle;
+                        document.getElementById('existing-quiz-title').textContent = quizTitle;
+                        document.getElementById('manage-questions-link').href = `/Instructor/Quiz/ManageQuestions/${quizId}`;
+                        document.getElementById('quiz-exists').style.display = 'block';
+                        document.getElementById('delete-quiz-btn').style.display = 'inline-block';
+                        document.getElementById('save-quiz-btn').innerHTML = '<i class="bi bi-check-lg me-1"></i>Update Quiz';
+                        moduleQuizModal.show();
+                    }
+                });
+
+                // Inline Quiz Delete trigger
+                modulesTree.addEventListener('click', function(e) {
+                    const deleteBtn = e.target.closest('.delete-quiz-trigger');
+                    if (deleteBtn) {
+                        e.stopPropagation();
+                        const quizId = deleteBtn.dataset.quizId;
+                        const moduleId = deleteBtn.dataset.moduleId;
+
+                        showDeleteConfirm('Are you sure you want to delete this quiz? All questions will be removed.', async () => {
+                            try {
+                                const response = await fetch(`/Instructor/Quiz/Delete/${quizId}?moduleId=${moduleId}`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'RequestVerificationToken': requestVerificationToken
+                                    }
+                                });
+
+                                if (response.ok || response.redirected) {
+                                    showAlert('Quiz deleted successfully!', 'success');
+                                    loadModules();
+                                } else {
+                                    showAlert('Failed to delete quiz.', 'error');
+                                }
+                            } catch (error) {
+                                showAlert('An error occurred while deleting the quiz.', 'error');
+                            }
+                        });
+                    }
+                });
+
+                // Add Quiz link trigger
+                modulesTree.addEventListener('click', function(e) {
+                    const addQuizLink = e.target.closest('.add-quiz-link');
+                    if (addQuizLink) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const moduleId = addQuizLink.dataset.moduleId;
+                        const module = modulesData.find(m => m.id == moduleId);
+                        const moduleTitle = module ? module.title : 'Module';
+                        document.getElementById('quiz-module-id').value = moduleId;
+                        document.getElementById('quiz-id').value = '';
+                        document.getElementById('quiz-title').value = `${moduleTitle} Quiz`;
+                        document.getElementById('quiz-exists').style.display = 'none';
+                        document.getElementById('delete-quiz-btn').style.display = 'none';
+                        document.getElementById('save-quiz-btn').innerHTML = '<i class="bi bi-plus-lg me-1"></i>Create Quiz';
+                        moduleQuizModal.show();
+                    }
+                });
+
+                async function loadQuizForModule(moduleId) {
+                    const quizForm = document.getElementById('quiz-form');
+                    const quizExists = document.getElementById('quiz-exists');
+                    const saveBtn = document.getElementById('save-quiz-btn');
+                    const deleteBtn = document.getElementById('delete-quiz-btn');
+
+                    try {
+                        const response = await fetch(`/Instructor/Quiz/Manage/${moduleId}`, {
+                            headers: { 'Accept': 'application/json' }
+                        });
+
+                        // Check if quiz exists by trying to get quiz data
+                        const quizResponse = await fetch(`/api/Quiz/ByModule/${moduleId}`);
+
+                        if (quizResponse.ok) {
+                            const quiz = await quizResponse.json();
+                            // Quiz exists
+                            document.getElementById('quiz-id').value = quiz.id;
+                            document.getElementById('quiz-title').value = quiz.title;
+                            document.getElementById('existing-quiz-title').textContent = quiz.title;
+                            document.getElementById('manage-questions-link').href = `/Instructor/Quiz/ManageQuestions/${quiz.id}`;
+
+                            quizExists.style.display = 'block';
+                            deleteBtn.style.display = 'inline-block';
+                            saveBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Update Quiz';
+                        } else {
+                            // No quiz exists
+                            document.getElementById('quiz-id').value = '';
+                            quizExists.style.display = 'none';
+                            deleteBtn.style.display = 'none';
+                            saveBtn.innerHTML = '<i class="bi bi-plus-lg me-1"></i>Create Quiz';
+                        }
+                    } catch (error) {
+                        console.error('Error loading quiz:', error);
+                        quizExists.style.display = 'none';
+                        deleteBtn.style.display = 'none';
+                        saveBtn.innerHTML = '<i class="bi bi-plus-lg me-1"></i>Create Quiz';
+                    }
+                }
+
+                // Save/Create Quiz
+                document.getElementById('save-quiz-btn').addEventListener('click', async function() {
+                    const moduleId = document.getElementById('quiz-module-id').value;
+                    const quizId = document.getElementById('quiz-id').value;
+                    const title = document.getElementById('quiz-title').value.trim();
+
+                    if (!title) {
+                        showAlert('Please enter a quiz title.', 'warning');
+                        return;
+                    }
+
+                    try {
+                        let response;
+                        if (quizId) {
+                            // Update existing quiz
+                            response = await fetch(`/Instructor/Quiz/Edit/${quizId}`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/x-www-form-urlencoded',
+                                    'RequestVerificationToken': requestVerificationToken
+                                },
+                                body: `Id=${quizId}&ModuleId=${moduleId}&Title=${encodeURIComponent(title)}`
+                            });
+                        } else {
+                            // Create new quiz
+                            response = await fetch(`/Instructor/Quiz/Create/${moduleId}`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/x-www-form-urlencoded',
+                                    'RequestVerificationToken': requestVerificationToken
+                                },
+                                body: `ModuleId=${moduleId}&Title=${encodeURIComponent(title)}`
+                            });
+                        }
+
+                        if (response.ok || response.redirected) {
+                            moduleQuizModal.hide();
+                            showAlert(quizId ? 'Quiz updated successfully!' : 'Quiz created successfully! Add questions via Manage Questions.', 'success');
+                            loadModules();
+                        } else {
+                            showAlert('Failed to save quiz.', 'error');
+                        }
+                    } catch (error) {
+                        showAlert('An error occurred while saving the quiz.', 'error');
+                    }
+                });
+
+                // Delete Quiz
+                document.getElementById('delete-quiz-btn').addEventListener('click', async function() {
+                    const quizId = document.getElementById('quiz-id').value;
+                    const moduleId = document.getElementById('quiz-module-id').value;
+
+                    if (!quizId) return;
+
+                    if (!confirm('Are you sure you want to delete this quiz? All questions will be removed.')) {
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch(`/Instructor/Quiz/Delete/${quizId}?moduleId=${moduleId}`, {
+                            method: 'POST',
+                            headers: {
+                                'RequestVerificationToken': requestVerificationToken
+                            }
+                        });
+
+                        if (response.ok || response.redirected) {
+                            moduleQuizModal.hide();
+                            showAlert('Quiz deleted successfully!', 'success');
+                            loadModules();
+                        } else {
+                            showAlert('Failed to delete quiz.', 'error');
+                        }
+                    } catch (error) {
+                        showAlert('An error occurred while deleting the quiz.', 'error');
                     }
                 });
 
